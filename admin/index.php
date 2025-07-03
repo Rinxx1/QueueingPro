@@ -19,7 +19,7 @@ include 'components/header.php';
         <div class="stat-value">24</div>
         <div class="stat-label">Customers Served Today</div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card"> 
         <div class="stat-value">8</div>
         <div class="stat-label">Customers Waiting</div>
     </div>

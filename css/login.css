@@ -306,6 +306,7 @@ body {
     transition: var(--transition);
     background: rgba(255, 255, 255, 0.9);
     color: var(--primary-color);
+    width: 100%;
 }
 
 .form-group input:focus {
@@ -320,33 +321,117 @@ body {
     opacity: 0.7;
 }
 
-/* Password Input */
+/* Password Input - Clean and Fixed */
 .password-input {
     position: relative;
+    width: 100%;
 }
 
 .password-input input {
-    padding-right: 3rem;
+    padding: 0.9rem 3rem 0.9rem 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: var(--transition);
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--primary-color);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Completely hide all browser default password toggles */
+.password-input input::-ms-reveal,
+.password-input input::-ms-clear {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+.password-input input::-webkit-outer-spin-button,
+.password-input input::-webkit-inner-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+    display: none !important;
+}
+
+.password-input input[type="password"]::-webkit-credentials-auto-fill-button {
+    visibility: hidden !important;
+    pointer-events: none !important;
+    position: absolute !important;
+    right: 0 !important;
+    display: none !important;
+}
+
+.password-input input[type="password"]::-webkit-strong-password-auto-fill-button {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+.password-input input[type="password"]::-webkit-password-auto-fill-button {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+/* Hide any browser-generated password icons */
+.password-input input[type="password"] {
+    background-image: none !important;
+}
+
+.password-input input[type="text"] {
+    background-image: none !important;
+}
+
+.password-input input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+.password-input input::placeholder {
+    color: var(--medium-gray);
+    opacity: 0.7;
 }
 
 .toggle-password {
     position: absolute;
-    right: 1rem;
+    right: 8px;
     top: 50%;
     transform: translateY(-50%);
-    background: none;
+    background: transparent;
     border: none;
     color: var(--medium-gray);
     cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 50%;
-    transition: var(--transition);
-    font-size: 0.9rem;
+    padding: 8px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    pointer-events: auto;
+    user-select: none;
 }
 
 .toggle-password:hover {
-    background: var(--light-gray);
-    color: var(--primary-color);
+    background: rgba(74, 144, 226, 0.1);
+    color: var(--accent-color);
+}
+
+.toggle-password:active {
+    background: rgba(74, 144, 226, 0.2);
+    transform: translateY(-50%) scale(0.95);
+}
+
+.toggle-password i {
+    font-size: 14px;
+    pointer-events: none;
+    line-height: 1;
+    user-select: none;
 }
 
 /* Form Options */

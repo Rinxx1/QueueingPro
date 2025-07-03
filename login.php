@@ -58,8 +58,8 @@
                             placeholder="Enter your password"
                             autocomplete="current-password"
                         >
-                        <button type="button" class="toggle-password" id="togglePassword">
-                            <i class="fas fa-eye"></i>
+                        <button type="button" class="toggle-password" id="togglePassword" onclick="document.getElementById('password').type = document.getElementById('password').type === 'password' ? 'text' : 'password'; var icon = document.getElementById('toggleIcon'); if(document.getElementById('password').type === 'text') { icon.className = 'fas fa-eye-slash'; } else { icon.className = 'fas fa-eye'; }" tabindex="-1">
+                            <i class="fas fa-eye" id="toggleIcon"></i>
                         </button>
                     </div>
                 </div>
@@ -111,27 +111,30 @@
     </div>
 
     <script>
-        // Toggle password visibility
-        document.getElementById('togglePassword').addEventListener('click', function() {
-            const passwordInput = document.getElementById('password');
-            const toggleIcon = this.querySelector('i');
+        // Simple password toggle (inline method should work as primary)
+        function togglePassword() {
+            var passwordInput = document.getElementById('password');
+            var toggleIcon = document.getElementById('toggleIcon');
             
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                toggleIcon.classList.remove('fa-eye');
-                toggleIcon.classList.add('fa-eye-slash');
-            } else {
-                passwordInput.type = 'password';
-                toggleIcon.classList.remove('fa-eye-slash');
-                toggleIcon.classList.add('fa-eye');
+            if (passwordInput && toggleIcon) {
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    toggleIcon.className = 'fas fa-eye-slash';
+                } else {
+                    passwordInput.type = 'password';
+                    toggleIcon.className = 'fas fa-eye';
+                }
             }
-        });
+        }
 
         // Form submission handling
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const username = document.getElementById('username').value;
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             
             if (!username || !password) {
