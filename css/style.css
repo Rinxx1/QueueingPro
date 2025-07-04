@@ -792,6 +792,24 @@
     width: 100%;
 }
 
+/* Force hide confirmation actions when in final step */
+#confirmationActions.hidden {
+    display: none !important;
+}
+
+#finalActions.hidden {
+    display: none !important;
+}
+
+/* Ensure only one set of actions shows at a time */
+.modal-actions {
+    position: relative;
+}
+
+.modal-actions > div:not([style*="display: flex"]):not([style*="display: block"]) {
+    display: none;
+}
+
 /* Responsive Design - Landscape First for Kiosk */
 
 /* Large Landscape Displays (Kiosks, Large Tablets) */

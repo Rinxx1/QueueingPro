@@ -259,6 +259,6 @@
         </div>
     </div>
 
-    <script src="js/script_new.js"></script>
+    <script src="js/counters.js"></script>
 </body>
 </html>

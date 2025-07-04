@@ -1,3 +1,17 @@
+<?php
+// Start session and check authentication
+session_start();
+require_once '../connections/auth.php';
+
+// Check if user is logged in and is admin
+if (!isLoggedIn() || !isAdmin()) {
+    header("Location: ../login.php");
+    exit();
+}
+
+// Get username from session
+$username = $_SESSION['username'] ?? 'Administrator';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,6 +21,8 @@
     <link rel="stylesheet" href="css/admin.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- SweetAlert2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
     <div class="admin-container">
@@ -23,16 +39,16 @@
                 <div class="admin-info">
                     <div class="admin-profile">
                         <i class="fas fa-user-shield"></i>
-                        <span class="admin-name">Administrator</span>
+                        <span class="admin-name"><?php echo htmlspecialchars($username); ?></span>
                     </div>
                     <div class="datetime">
                         <span id="currentDateTime"></span>
                     </div>
                 </div>
-                <a href="../login.php" class="logout-btn">
+                <button type="button" class="logout-btn" onclick="confirmLogout()">
                     <i class="fas fa-sign-out-alt"></i>
                     Logout
-                </a>
+                </button>
             </div>
         </header>
 
@@ -64,3 +80,6 @@
 
         <!-- Main Content -->
         <main class="admin-main">
+        
+        <!-- Import header.js for functionality -->
+        <script src="scripts/header.js"></script>
