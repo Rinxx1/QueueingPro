@@ -137,100 +137,118 @@ class QueueDisplay {
     
     async fetchQueueData() {
         try {
-            // In a real implementation, this would fetch from your backend API
-            // For now, we'll simulate with demo data
-            const demoData = this.generateDemoData();
-            this.updateDisplay(demoData);
+            const response = await fetch('display_data.php');
+            const result = await response.json();
+            
+            if (result.success) {
+                this.updateDisplay(result.data);
+            } else {
+                console.error('Error fetching queue data:', result.message);
+                this.handleDataError();
+            }
         } catch (error) {
             console.error('Error fetching queue data:', error);
+            this.handleDataError();
         }
     }
     
-    generateDemoData() {
-        // Generate realistic demo data
-        const services = [
-            { id: 1, name: 'General Banking', prefix: 'A', color: '#28a745' },
-            { id: 2, name: 'Account Services', prefix: 'B', color: '#007bff' },
-            { id: 3, name: 'Loan Services', prefix: 'C', color: '#ffc107' },
-            { id: 4, name: 'Deposits & Withdrawals', prefix: 'D', color: '#17a2b8' },
-            { id: 5, name: 'Customer Support', prefix: 'F', color: '#6c757d' },
-            { id: 6, name: 'Premium Services', prefix: 'E', color: '#6f42c1' }
-        ];
+    handleDataError() {
+        // Handle data loading errors gracefully
+        console.warn('Using fallback data due to connection issues');
         
-        const counters = [];
-        
-        services.forEach((service, index) => {
-            const counterId = index + 1;
-            const isOnline = Math.random() > 0.2; // 80% chance of being online
-            const servedToday = Math.floor(Math.random() * 50) + 1;
-            const avgTime = Math.floor(Math.random() * 20) + 5;
-            const currentNumber = Math.floor(Math.random() * 50) + 1;
-            
-            counters.push({
-                id: counterId,
-                name: service.name,
-                prefix: service.prefix,
-                isOnline: isOnline,
-                currentServing: isOnline ? `${service.prefix}${currentNumber.toString().padStart(3, '0')}` : null,
-                servedToday: isOnline ? servedToday : 0,
-                averageTime: isOnline ? avgTime : 0
+        // Create fallback data for 6 counters
+        const fallbackCounters = [];
+        for (let i = 1; i <= 6; i++) {
+            fallbackCounters.push({
+                id: i,
+                name: `Counter ${i}`,
+                description: '',
+                current_number: '--',
+                status: 'Offline',
+                served_today: 0,
+                avg_duration: 0
             });
-        });
+        }
         
-        return {
-            counters: counters,
-            totalServed: counters.reduce((sum, counter) => sum + counter.servedToday, 0),
-            activeCounters: counters.filter(c => c.isOnline).length,
-            totalCounters: counters.length
-        };
+        this.updateDisplay(fallbackCounters);
     }
     
-    updateDisplay(data) {
-        this.updateCounters(data.counters);
-    }
-    
-    updateCounters(counters) {
+    updateDisplay(counters) {
+        if (!counters || !Array.isArray(counters)) {
+            console.error('Invalid counter data received');
+            return;
+        }
+        
+        // Clear any existing dynamic sections first
+        this.clearDynamicCounters();
+        
+        // Update each counter display
         counters.forEach((counter, index) => {
-            const counterCard = document.querySelector(`.counter-card:nth-child(${index + 1})`);
-            if (!counterCard) return;
-            
-            // Update counter status
-            const statusElement = counterCard.querySelector('.counter-status');
-            const currentServingElement = counterCard.querySelector('.current-serving .queue-number');
-            const servedTodayElement = counterCard.querySelector('.stat:nth-child(1) span');
-            const avgTimeElement = counterCard.querySelector('.stat:nth-child(2) span');
-            
-            // Update card class
-            counterCard.className = `counter-card ${counter.isOnline ? 'active' : 'offline'}`;
-            
-            // Update status
-            if (statusElement) {
-                statusElement.className = `counter-status ${counter.isOnline ? 'online' : 'offline'}`;
-                statusElement.innerHTML = `
-                    <i class="fas fa-circle"></i>
-                    <span>${counter.isOnline ? 'ONLINE' : 'OFFLINE'}</span>
-                `;
-            }
-            
-            // Update current serving
-            if (currentServingElement) {
-                if (counter.isOnline && counter.currentServing) {
-                    currentServingElement.textContent = counter.currentServing;
-                    currentServingElement.className = 'queue-number';
-                } else {
-                    currentServingElement.textContent = 'Closed';
-                    currentServingElement.className = 'queue-number offline';
-                }
-            }
-            
-            // Update stats
-            if (servedTodayElement) {
-                servedTodayElement.textContent = `Served Today: ${counter.servedToday}`;
-            }
-            if (avgTimeElement) {
-                avgTimeElement.textContent = `Avg Time: ${counter.averageTime || '--'} min`;
-            }
+            this.updateCounterCard(counter, index);
         });
+    }
+    
+    clearDynamicCounters() {
+        // This method can be used if we need to clear dynamically added sections
+        // For now, we'll rely on the server-side generation
+    }
+    
+    updateCounterCard(counter, index) {
+        // Get the counter card by its position in the DOM
+        const allCounterCards = document.querySelectorAll('.counter-card');
+        
+        if (index >= allCounterCards.length) {
+            console.warn(`Counter index ${index} exceeds available counter cards`);
+            return;
+        }
+        
+        const counterCard = allCounterCards[index];
+        if (!counterCard) return;
+        
+        // Update status and classes
+        const isActive = counter.status && counter.status.toLowerCase() === 'active';
+        counterCard.className = `counter-card ${isActive ? 'active' : 'offline'}`;
+        
+        // Update counter number
+        const counterNumber = counterCard.querySelector('.counter-number');
+        if (counterNumber) {
+            counterNumber.textContent = String(counter.id).padStart(2, '0');
+        }
+        
+        // Update counter name
+        const counterName = counterCard.querySelector('h3');
+        if (counterName) {
+            counterName.textContent = counter.name;
+        }
+        
+        // Update status
+        const statusElement = counterCard.querySelector('.counter-status');
+        if (statusElement) {
+            statusElement.className = `counter-status ${isActive ? 'online' : 'offline'}`;
+            const statusText = statusElement.querySelector('span');
+            if (statusText) {
+                statusText.textContent = isActive ? 'ONLINE' : 'OFFLINE';
+            }
+        }
+        
+        // Update current serving number
+        const queueNumber = counterCard.querySelector('.queue-number');
+        if (queueNumber) {
+            queueNumber.textContent = counter.current_number || '--';
+        }
+        
+        // Update served today
+        const servedStat = counterCard.querySelector('.stat:nth-child(1) span');
+        if (servedStat) {
+            servedStat.textContent = `Served Today: ${counter.served_today || 0}`;
+        }
+        
+        // Update average time
+        const avgTimeStat = counterCard.querySelector('.stat:nth-child(2) span');
+        if (avgTimeStat) {
+            const avgTime = counter.avg_duration > 0 ? `${counter.avg_duration} min` : '-- min';
+            avgTimeStat.textContent = `Avg Time: ${avgTime}`;
+        }
     }
     
     showVideoPlaceholder() {

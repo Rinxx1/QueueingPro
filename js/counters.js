@@ -16,56 +16,26 @@ document.addEventListener('DOMContentLoaded', function() {
     // Transaction cards
     const transactionCards = document.querySelectorAll('.transaction-card');
 
-    // Service data
-    const serviceData = {
-        'general': {
-            name: 'General Banking',
-            icon: 'fas fa-university',
-            wait: '5-10 minutes',
-            prefix: 'G'
-        },
-        'deposit': {
-            name: 'Deposits & Withdrawals',
-            icon: 'fas fa-money-bill-wave',
-            wait: '3-7 minutes',
-            prefix: 'D'
-        },
-        'loans': {
-            name: 'Loans & Credit',
-            icon: 'fas fa-handshake',
-            wait: '15-25 minutes',
-            prefix: 'L'
-        },
-        'account': {
-            name: 'Account Services',
-            icon: 'fas fa-user-cog',
-            wait: '10-20 minutes',
-            prefix: 'A'
-        },
-        'business': {
-            name: 'Business Banking',
-            icon: 'fas fa-briefcase',
-            wait: '12-20 minutes',
-            prefix: 'B'
-        },
-        'support': {
-            name: 'Customer Support',
-            icon: 'fas fa-headset',
-            wait: '8-15 minutes',
-            prefix: 'S'
-        }
-    };
-
-    let selectedService = null;
+    // Current selected counter
+    let selectedCounter = null;
     let generatedQueueNumber = null;
+    let queueData = null;
 
     // Add click handlers to transaction cards
     transactionCards.forEach(card => {
         card.addEventListener('click', function() {
             const category = this.getAttribute('data-category');
-            selectedService = serviceData[category];
+            const counterId = this.getAttribute('data-counter-id');
             
-            if (selectedService) {
+            if (category === 'counter' && counterId) {
+                selectedCounter = {
+                    id: counterId,
+                    name: this.querySelector('h4').textContent,
+                    description: this.querySelector('p').textContent,
+                    icon: 'fas fa-desktop',
+                    wait: '5-10 minutes'
+                };
+                
                 showConfirmationModal();
             }
         });
@@ -83,6 +53,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Show confirmation modal
     function showConfirmationModal() {
         resetModalSteps();
+        updateConfirmationModal(); // Update the modal content
         confirmationModal.style.display = 'flex';
         setTimeout(() => {
             confirmationModal.classList.add('active');
@@ -94,6 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
         confirmationModal.classList.remove('active');
         setTimeout(() => {
             confirmationModal.style.display = 'none';
+            resetButtonStates(); // Reset button states when closing
         }, 300);
     }
 
@@ -114,6 +86,8 @@ document.addEventListener('DOMContentLoaded', function() {
         ticketModal.classList.remove('active');
         setTimeout(() => {
             ticketModal.style.display = 'none';
+            resetButtonStates(); // Reset button states when closing
+            resetSelection(); // Reset selection when closing ticket modal
         }, 300);
     }
 
@@ -133,22 +107,41 @@ document.addEventListener('DOMContentLoaded', function() {
         finalActions.classList.add('hidden');
         
         document.getElementById('closeConfirmation').style.display = 'block';
+        
+        // Reset button states
+        resetButtonStates();
+    }
+
+    // Reset button states function
+    function resetButtonStates() {
+        const confirmBtn = document.getElementById('confirmService');
+        const proceedBtn = document.getElementById('printQueueNumber');
+        const exitBtn = document.getElementById('exit');
+        
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = '<i class="fas fa-check"></i> Get Queue Number';
+        }
+        
+        if (proceedBtn) {
+            proceedBtn.disabled = false;
+            proceedBtn.innerHTML = '<i class="fas fa-print"></i> Proceed';
+        }
+        
+        if (exitBtn) {
+            exitBtn.disabled = false;
+            exitBtn.innerHTML = '<i class="fas fa-check-circle"></i> Close';
+        }
     }
 
     // Generate queue number
-    function generateQueueNumber() {
-        const prefix = selectedService.prefix;
-        const number = Math.floor(Math.random() * 999) + 1;
-        return prefix + String(number).padStart(3, '0');
-    }
-
     // Update confirmation modal with service details
     function updateConfirmationModal() {
-        if (!selectedService) return;
+        if (!selectedCounter) return;
 
-        document.getElementById('confirmServiceIcon').innerHTML = `<i class="${selectedService.icon}"></i>`;
-        document.getElementById('confirmServiceName').textContent = selectedService.name;
-        document.getElementById('finalServiceName').textContent = selectedService.name;
+        document.getElementById('confirmServiceIcon').innerHTML = `<i class="${selectedCounter.icon}"></i>`;
+        document.getElementById('confirmServiceName').textContent = selectedCounter.name;
+        document.getElementById('finalServiceName').textContent = selectedCounter.name;
         
         const now = new Date();
         document.getElementById('finalDateTime').textContent = now.toLocaleString();
@@ -156,11 +149,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Update ticket modal with service and queue details
     function updateTicketModal() {
-        if (!selectedService || !generatedQueueNumber) return;
+        if (!selectedCounter || !generatedQueueNumber) return;
 
         document.getElementById('ticketNumber').textContent = generatedQueueNumber;
-        document.getElementById('ticketService').textContent = selectedService.name;
-        document.getElementById('ticketWait').textContent = selectedService.wait;
+        document.getElementById('ticketService').textContent = selectedCounter.name;
+        document.getElementById('ticketWait').textContent = selectedCounter.wait;
         document.getElementById('ticketAhead').textContent = Math.floor(Math.random() * 10) + 1;
         
         const now = new Date();
@@ -170,39 +163,131 @@ document.addEventListener('DOMContentLoaded', function() {
     // Event Listeners
     
     // Close buttons
-    closeConfirmation.addEventListener('click', hideConfirmationModal);
+    closeConfirmation.addEventListener('click', () => {
+        hideConfirmationModal();
+        resetSelection();
+    });
     closeModal.addEventListener('click', hideTicketModal);
-    cancelService.addEventListener('click', hideConfirmationModal);
+    cancelService.addEventListener('click', () => {
+        hideConfirmationModal();
+        resetSelection();
+    });
     closeTicket.addEventListener('click', hideTicketModal);
+    
+    // Exit button (Close button in final step)
+    const exitBtn = document.getElementById('exit');
+    if (exitBtn) {
+        exitBtn.addEventListener('click', () => {
+            hideConfirmationModal();
+            resetSelection();
+        });
+    }
 
     // Confirm service button
-    confirmService.addEventListener('click', function() {
-        generatedQueueNumber = generateQueueNumber();
-        updateConfirmationModal();
+    confirmService.addEventListener('click', async function() {
+        // Show loading state
+        this.disabled = true;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
         
-        // Show step 2 of confirmation - hide all previous buttons forcefully
-        document.getElementById('confirmationStep').style.display = 'none';
-        document.getElementById('queueNumberStep').style.display = 'block';
-        
-        // Use both style and class to ensure hiding
-        const confirmActions = document.getElementById('confirmationActions');
-        const finalActions = document.getElementById('finalActions');
-        
-        confirmActions.style.display = 'none';
-        confirmActions.classList.add('hidden');
-        
-        finalActions.style.display = 'flex';
-        finalActions.classList.remove('hidden');
-        
-        // Hide the close button in the header for final step
-        document.getElementById('closeConfirmation').style.display = 'none';
-        
-        document.getElementById('generatedNumber').textContent = generatedQueueNumber;
+        try {
+            // Generate queue number from backend
+            const response = await fetch('queue_handler.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    action: 'generate_queue_number',
+                    counter_id: selectedCounter.id
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                queueData = result.data;
+                generatedQueueNumber = queueData.awaiting_number;
+                
+                updateConfirmationModal();
+                
+                // Show step 2 of confirmation - hide all previous buttons forcefully
+                document.getElementById('confirmationStep').style.display = 'none';
+                document.getElementById('queueNumberStep').style.display = 'block';
+                
+                // Use both style and class to ensure hiding
+                const confirmActions = document.getElementById('confirmationActions');
+                const finalActions = document.getElementById('finalActions');
+                
+                confirmActions.style.display = 'none';
+                confirmActions.classList.add('hidden');
+                
+                finalActions.style.display = 'flex';
+                finalActions.classList.remove('hidden');
+                
+                // Hide the close button in the header for final step
+                document.getElementById('closeConfirmation').style.display = 'none';
+                
+                document.getElementById('generatedNumber').textContent = generatedQueueNumber;
+            } else {
+                alert('Error generating queue number: ' + result.message);
+                // Reset button state
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-check"></i> Get Queue Number';
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error connecting to server. Please try again.');
+            // Reset button state
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-check"></i> Get Queue Number';
+        }
     });
 
     // Print queue number (from confirmation modal)
-    printQueueNumber.addEventListener('click', function() {
-        showTicketModal();
+    printQueueNumber.addEventListener('click', async function() {
+        if (!queueData || !generatedQueueNumber) {
+            alert('No queue number generated');
+            return;
+        }
+        
+        // Show loading state
+        this.disabled = true;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        
+        try {
+            // Add to awaiting table
+            const response = await fetch('queue_handler.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    action: 'add_to_queue',
+                    counter_id: selectedCounter.id,
+                    awaiting_number: generatedQueueNumber
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Successfully added to queue, show ticket modal
+                showTicketModal();
+                // Reset the confirmation modal button states for next use
+                resetButtonStates();
+            } else {
+                alert('Error adding to queue: ' + result.message);
+                // Reset button state
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-print"></i> Proceed';
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error connecting to server. Please try again.');
+            // Reset button state
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-print"></i> Proceed';
+        }
     });
 
     // Finish process (from confirmation modal)
@@ -229,17 +314,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Reset selection
     function resetSelection() {
-        selectedService = null;
+        selectedCounter = null;
         generatedQueueNumber = null;
+        queueData = null;
         transactionCards.forEach(card => {
             card.classList.remove('selected');
         });
+        
+        // Reset button states
+        resetButtonStates();
     }
 
     // Close modal when clicking outside
     confirmationModal.addEventListener('click', function(e) {
         if (e.target === confirmationModal) {
             hideConfirmationModal();
+            resetSelection();
         }
     });
 
@@ -254,6 +344,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.key === 'Escape') {
             if (confirmationModal.style.display === 'flex') {
                 hideConfirmationModal();
+                resetSelection();
             }
             if (ticketModal.style.display === 'flex') {
                 hideTicketModal();

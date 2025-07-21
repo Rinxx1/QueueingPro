@@ -340,3 +340,82 @@ body {
 .loading {
     animation: loading 1.5s infinite;
 }
+
+/* Dynamic Counter Layout Support */
+.display-container[data-counter-count="1"] {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 80px;
+    grid-template-areas: 
+        "counter-1"
+        "datetime";
+}
+
+.display-container[data-counter-count="2"] {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 80px;
+    grid-template-areas: 
+        "counter-1 counter-2"
+        "datetime datetime";
+}
+
+.display-container[data-counter-count="3"] {
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr 80px;
+    grid-template-areas: 
+        "counter-1 counter-2 counter-3"
+        "datetime datetime datetime";
+}
+
+/* Dynamic right counter sections */
+.right-counter-1,
+.right-counter-2,
+.right-counter-3,
+.right-counter-4 {
+    padding: 15px;
+}
+
+/* No Counters State */
+.no-counters {
+    grid-column: 1 / -1;
+    grid-row: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--secondary-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+}
+
+.no-counters-message {
+    text-align: center;
+    padding: 40px;
+}
+
+.no-counters-message h2 {
+    color: var(--primary-color);
+    margin-bottom: 20px;
+    font-size: 2.5rem;
+}
+
+.no-counters-message p {
+    color: var(--medium-gray);
+    font-size: 1.2rem;
+}
+
+/* Responsive adjustments for fewer counters */
+.display-container[data-counter-count="1"] .counter-1,
+.display-container[data-counter-count="2"] .counter-1,
+.display-container[data-counter-count="2"] .counter-2,
+.display-container[data-counter-count="3"] .counter-1,
+.display-container[data-counter-count="3"] .counter-2,
+.display-container[data-counter-count="3"] .counter-3 {
+    padding: 30px;
+}
+
+.display-container[data-counter-count="1"] .counter-card,
+.display-container[data-counter-count="2"] .counter-card,
+.display-container[data-counter-count="3"] .counter-card {
+    height: auto;
+    min-height: 400px;
+}
+}

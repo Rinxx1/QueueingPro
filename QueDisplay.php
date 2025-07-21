@@ -1,3 +1,25 @@
+<?php
+require_once 'connections/database.php';
+
+// Get counters from database for initial structure
+$counters = [];
+try {
+    $stmt = $pdo->prepare("
+        SELECT 
+            c.Counter_ID,
+            c.Counter_Name,
+            c.Counter_Status
+        FROM counters c
+        ORDER BY c.Counter_ID ASC
+        LIMIT 6
+    ");
+    $stmt->execute();
+    $counters = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch(PDOException $e) {
+    // Handle error silently for display
+    $counters = [];
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,209 +31,72 @@
 </head>
 <body>
     <!-- Main Display Container -->
-    <main class="display-container">
-        <!-- Counter 1 - Top Left -->
-        <section class="counter-1">
-            <div class="counter-card active">
-                <div class="counter-header">
-                    <div class="counter-left">
-                        <div class="counter-number">01</div>
-                        <h3>General Banking</h3>
-                    </div>
-                    <div class="counter-status online">
-                        <i class="fas fa-circle"></i>
-                        <span>ONLINE</span>
-                    </div>
-                </div>
-                <div class="counter-info">
-                    <div class="current-serving">
-                        <span class="label">Now Serving:</span>
-                        <span class="queue-number">A031</span>
-                    </div>
-                    <div class="counter-stats">
-                        <div class="stat">
-                            <i class="fas fa-users"></i>
-                            <span>Served Today: 11</span>
+    <main class="display-container" data-counter-count="<?php echo count($counters); ?>">
+        <?php if (count($counters) > 0): ?>
+            <?php foreach ($counters as $index => $counter): ?>
+                <?php 
+                $sectionClass = '';
+                if ($index == 0) $sectionClass = 'counter-1';
+                elseif ($index == 1) $sectionClass = 'counter-2';
+                elseif ($index == 2) $sectionClass = 'counter-3';
+                else $sectionClass = 'right-counter-' . ($index - 2);
+                ?>
+                
+                <section class="<?php echo $sectionClass; ?>">
+                    <div class="counter-card offline">
+                        <div class="counter-header">
+                            <div class="counter-left">
+                                <div class="counter-number"><?php echo str_pad($counter['Counter_ID'], 2, '0', STR_PAD_LEFT); ?></div>
+                                <h3><?php echo htmlspecialchars($counter['Counter_Name']); ?></h3>
+                            </div>
+                            <div class="counter-status offline">
+                                <i class="fas fa-circle"></i>
+                                <span>LOADING</span>
+                            </div>
                         </div>
-                        <div class="stat">
-                            <i class="fas fa-clock"></i>
-                            <span>Avg Time: 18 min</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Counter 2 - Bottom Left -->
-        <section class="counter-2">
-            <div class="counter-card active">
-                <div class="counter-header">
-                    <div class="counter-left">
-                        <div class="counter-number">02</div>
-                        <h3>Teller Services</h3>
-                    </div>
-                    <div class="counter-status online">
-                        <i class="fas fa-circle"></i>
-                        <span>ONLINE</span>
-                    </div>
-                </div>
-                <div class="counter-info">
-                    <div class="current-serving">
-                        <span class="label">Now Serving:</span>
-                        <span class="queue-number">B045</span>
-                    </div>
-                    <div class="counter-stats">
-                        <div class="stat">
-                            <i class="fas fa-users"></i>
-                            <span>Served Today: 23</span>
-                        </div>
-                        <div class="stat">
-                            <i class="fas fa-clock"></i>
-                            <span>Avg Time: 15 min</span>
+                        <div class="counter-info">
+                            <div class="current-serving">
+                                <span class="label">Now Serving:</span>
+                                <span class="queue-number">--</span>
+                            </div>
+                            <div class="counter-stats">
+                                <div class="stat">
+                                    <i class="fas fa-users"></i>
+                                    <span>Served Today: --</span>
+                                </div>
+                                <div class="stat">
+                                    <i class="fas fa-clock"></i>
+                                    <span>Avg Time: -- min</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Center - Video Display -->
-        <section class="video-section">
-            <div class="video-container">
-                <div class="video-content">
-                    <video id="displayVideo" autoplay muted loop>
-                        <source src="video/info-video.mp4" type="video/mp4">
-                        <div class="video-placeholder">
-                            <h2>Video</h2>
-                        </div>
-                    </video>
-                </div>
-            </div>
-        </section>
-
-        <!-- Counter 3 - Bottom Left -->
-        <section class="counter-3">
-            <div class="counter-card active">
-                <div class="counter-header">
-                    <div class="counter-left">
-                        <div class="counter-number">03</div>
-                        <h3>Loan Services</h3>
-                    </div>
-                    <div class="counter-status online">
-                        <i class="fas fa-circle"></i>
-                        <span>ONLINE</span>
+                </section>
+            <?php endforeach; ?>
+            
+            <!-- Video section only if we have counters -->
+            <section class="video-section">
+                <div class="video-container">
+                    <div class="video-content">
+                        <video id="displayVideo" autoplay muted loop>
+                            <source src="uploads/videos/info-video.mp4" type="video/mp4">
+                            <div class="video-placeholder">
+                                <h2>Video</h2>
+                            </div>
+                        </video>
                     </div>
                 </div>
-                <div class="counter-info">
-                    <div class="current-serving">
-                        <span class="label">Now Serving:</span>
-                        <span class="queue-number">C012</span>
-                    </div>
-                    <div class="counter-stats">
-                        <div class="stat">
-                            <i class="fas fa-users"></i>
-                            <span>Served Today: 8</span>
-                        </div>
-                        <div class="stat">
-                            <i class="fas fa-clock"></i>
-                            <span>Avg Time: 25 min</span>
-                        </div>
-                    </div>
+            </section>
+            
+        <?php else: ?>
+            <!-- No counters available -->
+            <section class="no-counters">
+                <div class="no-counters-message">
+                    <h2>No Counters Available</h2>
+                    <p>Please configure counters in the admin panel.</p>
                 </div>
-            </div>
-        </section>
-
-        <!-- Right Side - Counters 4, 5, 6 Horizontally -->
-        <section class="right-counters">
-            <!-- Counter 4 -->
-            <div class="counter-card offline">
-                <div class="counter-header">
-                    <div class="counter-left">
-                        <div class="counter-number">04</div>
-                        <h3>Customer Support</h3>
-                    </div>
-                    <div class="counter-status offline">
-                        <i class="fas fa-circle"></i>
-                        <span>OFFLINE</span>
-                    </div>
-                </div>
-                <div class="counter-info">
-                    <div class="current-serving">
-                        <span class="label">Now Serving:</span>
-                        <span class="queue-number">--</span>
-                    </div>
-                    <div class="counter-stats">
-                        <div class="stat">
-                            <i class="fas fa-users"></i>
-                            <span>Served Today: 0</span>
-                        </div>
-                        <div class="stat">
-                            <i class="fas fa-clock"></i>
-                            <span>Avg Time: -- min</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Counter 5 -->
-            <div class="counter-card offline">
-                <div class="counter-header">
-                    <div class="counter-left">
-                        <div class="counter-number">05</div>
-                        <h3>Business Banking</h3>
-                    </div>
-                    <div class="counter-status offline">
-                        <i class="fas fa-circle"></i>
-                        <span>OFFLINE</span>
-                    </div>
-                </div>
-                <div class="counter-info">
-                    <div class="current-serving">
-                        <span class="label">Now Serving:</span>
-                        <span class="queue-number">--</span>
-                    </div>
-                    <div class="counter-stats">
-                        <div class="stat">
-                            <i class="fas fa-users"></i>
-                            <span>Served Today: 0</span>
-                        </div>
-                        <div class="stat">
-                            <i class="fas fa-clock"></i>
-                            <span>Avg Time: -- min</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Counter 6 -->
-            <div class="counter-card active">
-                <div class="counter-header">
-                    <div class="counter-left">
-                        <div class="counter-number">06</div>
-                        <h3>Premium Services</h3>
-                    </div>
-                    <div class="counter-status online">
-                        <i class="fas fa-circle"></i>
-                        <span>ONLINE</span>
-                    </div>
-                </div>
-                <div class="counter-info">
-                    <div class="current-serving">
-                        <span class="label">Now Serving:</span>
-                        <span class="queue-number">E002</span>
-                    </div>
-                    <div class="counter-stats">
-                        <div class="stat">
-                            <i class="fas fa-users"></i>
-                            <span>Served Today: 5</span>
-                        </div>
-                        <div class="stat">
-                            <i class="fas fa-clock"></i>
-                            <span>Avg Time: 25 min</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
+            </section>
+        <?php endif; ?>
 
         <!-- Date and Time at Bottom -->
         <section class="datetime-section">

@@ -93,12 +93,12 @@ include 'components/header.php';
                             <option value="1" selected>Controller</option>
                         </select>
                     </div>
-                    <div>
+                     <div>
                         <label for="counter_id">Counter Assignment</label>
-                        <select id="counter_id" name="counter_id" required>
-                            <!-- Options loaded via JavaScript -->
+                        <select id="counter_id" name="counter_id">
+                       
                         </select>
-                    </div>
+                    </div> 
                 </div>
                 <div id="statusField" style="margin-bottom: 1rem; display: none;">
                     <label for="status">Status</label>

@@ -89,6 +89,37 @@
     margin-top: 1rem;
 }
 
+/* No Counters State */
+.no-counters {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--medium-gray);
+    background: white;
+    border-radius: var(--border-radius);
+    border: 2px dashed var(--border-color);
+}
+
+.no-counters-icon {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    color: var(--warning-color);
+}
+
+.no-counters h3 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--primary-color);
+}
+
+.no-counters p {
+    font-size: 1.1rem;
+    color: var(--medium-gray);
+    max-width: 500px;
+    margin: 0 auto;
+}
+
 .transaction-card {
     border: 2px solid #dee2e6;
     border-radius: 15px;
@@ -1202,4 +1233,35 @@
     body {
         background: white;
     }
+}
+
+/* No Counters Empty State */
+.no-counters {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--medium-gray);
+    background: white;
+    border-radius: var(--border-radius);
+    border: 2px dashed var(--border-color);
+}
+
+.no-counters-icon {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    color: var(--warning-color);
+}
+
+.no-counters h3 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--primary-color);
+}
+
+.no-counters p {
+    font-size: 1.1rem;
+    color: var(--medium-gray);
+    max-width: 500px;
+    margin: 0 auto;
 }
