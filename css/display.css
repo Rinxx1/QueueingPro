@@ -52,39 +52,39 @@ body {
         "counter-2 video"
         "counter-3 right-counters"
         "datetime datetime";
+    align-items: stretch;
 }
 
-/* Individual Counter Sections */
+/* Individual Counter Sections - No padding for edge alignment */
 .counter-1 {
     grid-area: counter-1;
-    padding: 15px;
+    padding: 0;
 }
 
 .counter-2 {
     grid-area: counter-2;
-    padding: 15px;
+    padding: 0;
 }
 
 .counter-3 {
     grid-area: counter-3;
-    padding: 15px;
+    padding: 0;
 }
 
-/* Right Side Counters (4, 5, 6) */
+/* Right Side Counters (4, 5, 6) - No padding for edge alignment */
 .right-counters {
     grid-area: right-counters;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 10px;
-    padding: 15px;
+    padding: 0;
+    height: 100%;
+    align-items: stretch;
 }
 
 /* Video Section */
 .video-section {
     grid-area: video;
-    background: var(--secondary-color);
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow);
     overflow: hidden;
 }
 
@@ -122,6 +122,125 @@ body {
     font-weight: 300;
 }
 
+/* Enhanced Video Player Styles */
+.video-player-container {
+    width: 100%;
+    height: 100%;
+    background: var(--primary-color);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.video-content {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+}
+
+#displayVideo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.video-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--primary-color) 0%, #2c3e50 100%);
+    color: var(--secondary-color);
+}
+
+.placeholder-content {
+    text-align: center;
+    padding: 40px;
+}
+
+.placeholder-content i {
+    color: var(--accent-color);
+    margin-bottom: 20px;
+}
+
+.placeholder-content h2 {
+    margin-bottom: 10px;
+    font-size: 2rem;
+}
+
+.placeholder-content p {
+    color: var(--medium-gray);
+    font-size: 1.1rem;
+}
+
+.video-loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.8);
+    color: var(--secondary-color);
+}
+
+.loading-spinner {
+    text-align: center;
+}
+
+.loading-spinner i {
+    color: var(--accent-color);
+    margin-bottom: 15px;
+}
+
+.loading-spinner p {
+    font-size: 1.1rem;
+}
+
+.video-progress {
+    background: rgba(48, 60, 84, 0.95);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    color: var(--secondary-color);
+}
+
+.progress-bar {
+    flex: 1;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--accent-color);
+    width: 0%;
+    transition: width 0.1s ease;
+    border-radius: 3px;
+}
+
+.video-time {
+    font-size: 0.9rem;
+    font-family: 'Courier New', monospace;
+    color: var(--secondary-color);
+    min-width: 100px;
+    text-align: center;
+}
+
 /* Bottom Section - 4 Counters Horizontally (3, 4, 5, 6) */
 .bottom-counters {
     grid-area: bottom-counters;
@@ -131,7 +250,7 @@ body {
     padding: 1rem;
 }
 
-/* Counter Cards - Fixed for Scaling */
+/* Counter Cards - Fixed for edge alignment and consistent height */
 .counter-card {
     background: var(--secondary-color);
     border: 2px solid var(--border-color);
@@ -144,7 +263,8 @@ body {
     flex-direction: column;
     justify-content: space-between;
     height: 100%;
-    min-height: 0;
+    min-height: 300px;
+    box-shadow: var(--shadow);
 }
 
 .counter-card.active {
@@ -270,15 +390,6 @@ body {
     color: var(--primary-color);
 }
 
-/* Date and Time Section - Fixed for TV Display */
-.datetime-section {
-    grid-area: datetime;
-    background: var(--primary-color);
-    color: var(--secondary-color);
-    padding: 20px 40px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
 /* Date and Time Section - Fixed for Scaling */
 .datetime-section {
     grid-area: datetime;
@@ -341,37 +452,12 @@ body {
     animation: loading 1.5s infinite;
 }
 
-/* Dynamic Counter Layout Support */
-.display-container[data-counter-count="1"] {
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr 80px;
-    grid-template-areas: 
-        "counter-1"
-        "datetime";
-}
-
-.display-container[data-counter-count="2"] {
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 80px;
-    grid-template-areas: 
-        "counter-1 counter-2"
-        "datetime datetime";
-}
-
-.display-container[data-counter-count="3"] {
-    grid-template-columns: 1fr 1fr 1fr;
-    grid-template-rows: 1fr 80px;
-    grid-template-areas: 
-        "counter-1 counter-2 counter-3"
-        "datetime datetime datetime";
-}
-
-/* Dynamic right counter sections */
+/* Dynamic right counter sections - No padding for edge alignment */
 .right-counter-1,
 .right-counter-2,
 .right-counter-3,
 .right-counter-4 {
-    padding: 15px;
+    padding: 0;
 }
 
 /* No Counters State */
@@ -402,20 +488,37 @@ body {
     font-size: 1.2rem;
 }
 
-/* Responsive adjustments for fewer counters */
-.display-container[data-counter-count="1"] .counter-1,
-.display-container[data-counter-count="2"] .counter-1,
-.display-container[data-counter-count="2"] .counter-2,
-.display-container[data-counter-count="3"] .counter-1,
-.display-container[data-counter-count="3"] .counter-2,
-.display-container[data-counter-count="3"] .counter-3 {
-    padding: 30px;
+/* Enhanced alignment and height matching */
+.counter-1, .counter-2, .counter-3 {
+    display: flex;
+    flex-direction: column;
 }
 
-.display-container[data-counter-count="1"] .counter-card,
-.display-container[data-counter-count="2"] .counter-card,
-.display-container[data-counter-count="3"] .counter-card {
-    height: auto;
-    min-height: 400px;
+.counter-1 .counter-card,
+.counter-2 .counter-card,
+.counter-3 .counter-card {
+    flex: 1;
+    margin: 0;
 }
+
+/* Ensure right-counters cards match height and align properly */
+.right-counters .counter-card {
+    height: 100%;
+    min-height: 300px;
+}
+
+/* Perfect edge alignment - all sections should align to grid edges */
+.video-section,
+.counter-1,
+.counter-2,
+.counter-3,
+.right-counters {
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+}
+
+/* Ensure video section has consistent styling with counter cards */
+.video-section {
+    background: var(--secondary-color);
+    border: 2px solid var(--border-color);
 }

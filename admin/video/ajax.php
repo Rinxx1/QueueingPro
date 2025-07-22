@@ -28,6 +28,15 @@ switch ($action) {
         echo json_encode(['success' => true, 'data' => $videos]);
         break;
         
+    case 'get_active_video':
+        $activeVideo = getActiveVideo();
+        if ($activeVideo) {
+            echo json_encode(['success' => true, 'data' => $activeVideo]);
+        } else {
+            echo json_encode(['success' => true, 'data' => null, 'message' => 'No active video']);
+        }
+        break;
+        
     case 'get_video':
         $videoId = $_GET['id'] ?? 0;
         $video = getVideoById($videoId);
@@ -84,6 +93,20 @@ switch ($action) {
         }
         
         $result = updateVideo($videoId, $title, $description, $location, $status);
+        echo json_encode($result);
+        break;
+        
+    case 'edit_video_details':
+        $videoId = $_POST['video_id'] ?? 0;
+        $title = trim($_POST['title'] ?? '');
+        $description = trim($_POST['description'] ?? '');
+        
+        if (empty($title)) {
+            echo json_encode(['success' => false, 'message' => 'Title is required']);
+            break;
+        }
+        
+        $result = updateVideoDetails($videoId, $title, $description);
         echo json_encode($result);
         break;
         

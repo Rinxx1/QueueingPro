@@ -65,9 +65,31 @@ try {
         ];
     }
     
+    // Get active video information
+    $activeVideo = null;
+    try {
+        $stmt = $pdo->prepare("SELECT Video_ID, Video_Title, Video_Description, Video_Location, Video_Status FROM video WHERE Video_Status = 1 LIMIT 1");
+        $stmt->execute();
+        $videoResult = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($videoResult) {
+            $activeVideo = [
+                'id' => $videoResult['Video_ID'],
+                'title' => $videoResult['Video_Title'],
+                'description' => $videoResult['Video_Description'],
+                'location' => $videoResult['Video_Location'],
+                'status' => $videoResult['Video_Status']
+            ];
+        }
+    } catch(PDOException $e) {
+        // Video error is not critical, continue without video
+        error_log('Error fetching video: ' . $e->getMessage());
+    }
+    
     echo json_encode([
         'success' => true,
         'data' => $counters,
+        'video' => $activeVideo,
         'timestamp' => date('Y-m-d H:i:s')
     ]);
     

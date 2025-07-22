@@ -16,12 +16,12 @@ include 'components/header.php';
 <!-- Video Management Actions -->
 <div class="content-card" style="margin-bottom: 2rem;">
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
-            <h3 style="margin: 0; color: var(--primary-color);">
+        <div class="video-library-header">
+            <h3 class="video-library-title">
                 <i class="fas fa-play-circle"></i>
                 Video Library
             </h3>
-            <select id="statusFilter" style="padding: 0.6rem 1rem; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit;">
+            <select id="statusFilter">
                 <option value="">All Status</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
@@ -44,48 +44,12 @@ include 'components/header.php';
 <div id="videoModal" class="modal" style="display: none;">
     <div class="modal-content">
         <div class="modal-header">
-            <h3 id="modalTitle">Add New Video</h3>
+            <h3 id="modalTitle">Upload New Video</h3>
             <button type="button" class="modal-close" onclick="closeModal()">&times;</button>
         </div>
         
-        <!-- Tab Navigation -->
-        <div class="modal-tabs">
-            <button type="button" class="tab-btn active" onclick="switchTab('manual')">Manual Entry</button>
-            <button type="button" class="tab-btn" onclick="switchTab('upload')">Upload Video</button>
-        </div>
-        
-        <!-- Manual Entry Form -->
-        <form id="videoForm" style="display: block;">
-            <div class="modal-body">
-                <div style="margin-bottom: 1rem;">
-                    <label for="title">Video Title *</label>
-                    <input type="text" id="title" name="title" required placeholder="Enter video title">
-                </div>
-                <div style="margin-bottom: 1rem;">
-                    <label for="description">Description</label>
-                    <textarea id="description" name="description" rows="3" placeholder="Enter video description"></textarea>
-                </div>
-                <div style="margin-bottom: 1rem;">
-                    <label for="location">Video Location *</label>
-                    <input type="text" id="location" name="location" required placeholder="Enter video file path or URL">
-                    <small style="color: var(--medium-gray);">Enter the file path (e.g., videos/example.mp4) or URL</small>
-                </div>
-                <div id="statusField" style="margin-bottom: 1rem; display: none;">
-                    <label for="status">Status</label>
-                    <select id="status" name="status">
-                        <option value="1">Active</option>
-                        <option value="0">Inactive</option>
-                    </select>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary">Save Video</button>
-            </div>
-        </form>
-        
         <!-- Upload Form -->
-        <form id="uploadForm" enctype="multipart/form-data" style="display: none;">
+        <form id="uploadForm" enctype="multipart/form-data">
             <div class="modal-body">
                 <div style="border: 2px dashed var(--border-color); border-radius: 8px; padding: 2rem; text-align: center; margin-bottom: 1rem; background: var(--light-gray);">
                     <i class="fas fa-cloud-upload-alt" style="font-size: 3rem; color: var(--medium-gray); margin-bottom: 1rem;"></i>
@@ -117,62 +81,42 @@ include 'components/header.php';
     </div>
 </div>
 
-<style>
-/* ...existing styles... */
-
-/* Modal Tab Styles */
-.modal-tabs {
-    display: flex;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.tab-btn {
-    flex: 1;
-    padding: 1rem;
-    border: none;
-    background: var(--light-gray);
-    color: var(--medium-gray);
-    cursor: pointer;
-    font-family: inherit;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.tab-btn.active {
-    background: white;
-    color: var(--primary-color);
-    border-bottom: 2px solid var(--accent-color);
-}
-
-.tab-btn:hover {
-    background: var(--light-gray);
-}
-
-/* File Upload Styles */
-#fileInfo {
-    margin-top: 1rem;
-}
-
-.file-selected {
-    color: var(--success-color);
-    font-weight: 600;
-}
-
-/* Progress bar styles */
-.upload-progress {
-    background: #f0f0f0;
-    border-radius: 10px;
-    overflow: hidden;
-    height: 20px;
-    margin: 1rem 0;
-}
-
-.upload-progress-bar {
-    background: var(--accent-color);
-    height: 100%;
-    transition: width 0.3s ease;
-}
-</style>
+<!-- Edit Video Modal -->
+<div id="editVideoModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="editModalTitle">Edit Video</h3>
+            <button type="button" class="modal-close" onclick="closeEditModal()">&times;</button>
+        </div>
+        
+        <!-- Edit Form -->
+        <form id="editVideoForm">
+            <div class="modal-body">
+                <div style="margin-bottom: 1rem;">
+                    <label for="edit_title">Video Title *</label>
+                    <input type="text" id="edit_title" name="edit_title" required placeholder="Enter video title">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label for="edit_description">Description</label>
+                    <textarea id="edit_description" name="edit_description" rows="3" placeholder="Enter video description"></textarea>
+                </div>
+                <div class="edit-info-box">
+                    <p>
+                        <i class="fas fa-info-circle"></i>
+                        Note: Only the title and description can be edited. To change the video file, please delete this video and upload a new one.
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    Update Video
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <script src="video/scripts.js"></script>
 <?php include 'components/footer.php'; ?>

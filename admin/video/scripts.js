@@ -6,8 +6,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Event listeners
     document.getElementById('addVideoBtn').addEventListener('click', openAddModal);
-    document.getElementById('videoForm').addEventListener('submit', handleVideoSubmit);
     document.getElementById('uploadForm').addEventListener('submit', handleVideoUpload);
+    document.getElementById('editVideoForm').addEventListener('submit', handleEditVideoSubmit);
     document.getElementById('statusFilter').addEventListener('change', filterVideos);
     document.getElementById('video_file').addEventListener('change', handleFileSelect);
     
@@ -61,26 +61,58 @@ document.addEventListener('DOMContentLoaded', function() {
             const card = createVideoCard(video);
             container.appendChild(card);
         });
+        
+        // Apply current filter after loading videos
+        filterVideos();
     }
     
     // Create video card
     function createVideoCard(video) {
         const card = document.createElement('div');
-        card.className = 'content-card video-card';
+        card.className = `content-card video-card ${video.Video_Status == 1 ? 'active-video' : ''}`;
         
         const statusClass = video.Video_Status == 1 ? 'status-active' : 'status-inactive';
         const statusText = video.Video_Status == 1 ? 'Active' : 'Inactive';
         const iconClass = video.Video_Status == 1 ? 'fa-play-circle' : 'fa-pause-circle';
-        const iconColor = video.Video_Status == 1 ? 'var(--accent-color)' : 'var(--medium-gray)';
+        const iconColor = video.Video_Status == 1 ? 'var(--success-color)' : 'var(--medium-gray)';
+        
+        // Generate thumbnail content with proper aspect ratio
+        let thumbnailContent = '';
+        if (video.Video_Thumbnail && video.Video_Thumbnail.trim() !== '') {
+            thumbnailContent = `
+                <img src="${video.Video_Thumbnail}?t=${Date.now()}" 
+                     alt="Video thumbnail" 
+                     class="video-thumbnail-image"
+                     onerror="this.parentElement.innerHTML = getNoThumbnailContent('${iconClass}', '${iconColor}', ${video.Video_ID}, '${video.Video_Location}');">
+                <div class="video-overlay">
+                    <div class="video-play-button">
+                        <i class="fas ${iconClass}"></i>
+                    </div>
+                </div>
+                <div class="video-badge thumbnail-info bottom-left">
+                    <i class="fas fa-image"></i> Preview
+                </div>
+                <div class="video-actions">
+                    <button onclick="generateThumbnail(${video.Video_ID}, '${video.Video_Location}', true)" title="Regenerate thumbnail">
+                        <i class="fas fa-sync"></i>
+                    </button>
+                </div>
+            `;
+        } else {
+            thumbnailContent = getNoThumbnailContent(iconClass, iconColor, video.Video_ID, video.Video_Location);
+        }
         
         card.innerHTML = `
-            <div style="position: relative; background: var(--light-gray); height: 200px; border-radius: 8px; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center;">
-                <i class="fas ${iconClass}" style="font-size: 3rem; color: ${iconColor};"></i>
-                <div style="position: absolute; top: 0.5rem; right: 0.5rem;">
-                    <span class="status-badge ${statusClass}">${statusText}</span>
-                </div>
+            <div class="video-thumbnail-container ${video.Video_Status == 1 ? 'active' : ''}">
+                ${thumbnailContent}
+                ${video.Video_Status == 1 ? '<div class="video-badge status-active top-left"><i class="fas fa-star"></i></div>' : ''}
+                <div class="video-badge ${statusClass} top-right">${statusText}</div>
             </div>
-            <h4 style="color: var(--primary-color); margin-bottom: 0.5rem;">${video.Video_Title}</h4>
+            <h4 style="color: var(--primary-color); margin-bottom: 0.5rem;">
+                ${video.Video_Status == 1 ? '<i class="fas fa-star" style="color: var(--success-color); margin-right: 0.5rem;"></i>' : ''}
+                ${video.Video_Title}
+                ${video.Video_Status == 1 ? ' <small style="color: var(--success-color); font-weight: normal;">(Currently Playing)</small>' : ''}
+            </h4>
             <p style="color: var(--medium-gray); font-size: 0.9rem; margin-bottom: 1rem; min-height: 40px;">${video.Video_Description || 'No description'}</p>
             <div style="margin-bottom: 1rem; font-size: 0.85rem; color: var(--medium-gray);">
                 <span><i class="fas fa-link"></i> ${video.Video_Location}</span>
@@ -100,26 +132,16 @@ document.addEventListener('DOMContentLoaded', function() {
         
         return card;
     }
-    
-    // Tab switching
-    window.switchTab = function(tab) {
-        const manualForm = document.getElementById('videoForm');
-        const uploadForm = document.getElementById('uploadForm');
-        const tabBtns = document.querySelectorAll('.tab-btn');
-        
-        // Reset tab buttons
-        tabBtns.forEach(btn => btn.classList.remove('active'));
-        
-        if (tab === 'manual') {
-            manualForm.style.display = 'block';
-            uploadForm.style.display = 'none';
-            tabBtns[0].classList.add('active');
-        } else {
-            manualForm.style.display = 'none';
-            uploadForm.style.display = 'block';
-            tabBtns[1].classList.add('active');
-        }
-    };
+
+    // Helper function to generate no thumbnail content
+    function getNoThumbnailContent(iconClass, iconColor, videoId, videoLocation) {
+        return `
+            <div class="video-preview-area">
+                <i class="fas ${iconClass}" style="color: ${iconColor};"></i>
+                <div class="preview-text">No Preview Available</div>
+            </div>
+        `;
+    }
     
     // Handle file selection
     function handleFileSelect(e) {
@@ -236,53 +258,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Open add video modal
     function openAddModal() {
         currentEditVideoId = null;
-        document.getElementById('modalTitle').textContent = 'Add New Video';
-        document.getElementById('videoForm').reset();
+        document.getElementById('modalTitle').textContent = 'Upload New Video';
         document.getElementById('uploadForm').reset();
         document.getElementById('fileInfo').innerHTML = '';
-        document.getElementById('statusField').style.display = 'none';
-        switchTab('manual');
         document.getElementById('videoModal').style.display = 'flex';
-    }
-    
-    // Handle manual form submission
-    async function handleVideoSubmit(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(e.target);
-        const action = currentEditVideoId ? 'update_video' : 'create_video';
-        
-        if (currentEditVideoId) {
-            formData.append('video_id', currentEditVideoId);
-        }
-        formData.append('action', action);
-        
-        // Show loading
-        Swal.fire({
-            title: currentEditVideoId ? 'Updating Video...' : 'Creating Video...',
-            allowOutsideClick: false,
-            didOpen: () => Swal.showLoading()
-        });
-        
-        try {
-            const response = await fetch('video/ajax.php', {
-                method: 'POST',
-                body: formData
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                await Swal.fire('Success', result.message, 'success');
-                closeModal();
-                loadVideos();
-            } else {
-                await Swal.fire('Error', result.message, 'error');
-            }
-        } catch (error) {
-            console.error('Error saving video:', error);
-            await Swal.fire('Error', 'Connection error', 'error');
-        }
     }
     
     // Edit video function
@@ -295,21 +274,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 currentEditVideoId = videoId;
                 const video = result.data;
                 
-                document.getElementById('modalTitle').textContent = 'Edit Video';
-                document.getElementById('title').value = video.Video_Title;
-                document.getElementById('description').value = video.Video_Description || '';
-                document.getElementById('location').value = video.Video_Location;
-                document.getElementById('status').value = video.Video_Status;
+                // Populate edit form
+                document.getElementById('edit_title').value = video.Video_Title;
+                document.getElementById('edit_description').value = video.Video_Description || '';
                 
-                document.getElementById('statusField').style.display = 'block';
-                switchTab('manual');
-                document.getElementById('videoModal').style.display = 'flex';
+                // Open edit modal
+                document.getElementById('editVideoModal').style.display = 'flex';
             } else {
                 await Swal.fire('Error', 'Failed to load video data', 'error');
             }
         } catch (error) {
             console.error('Error loading video:', error);
-            await Swal.fire('Error', 'Connection error', 'error');
+            await Swal.fire('Error', 'Failed to load video data', 'error');
         }
     };
     
@@ -317,15 +293,28 @@ document.addEventListener('DOMContentLoaded', function() {
     window.toggleVideoStatus = async function(videoId, newStatus) {
         const actionText = newStatus == 1 ? 'activate' : 'deactivate';
         
-        const result = await Swal.fire({
+        let confirmConfig = {
             title: `Confirm ${actionText.charAt(0).toUpperCase() + actionText.slice(1)}`,
-            text: `Are you sure you want to ${actionText} this video?`,
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: newStatus == 1 ? '#28a745' : '#dc3545',
             cancelButtonColor: '#6c757d',
             confirmButtonText: `Yes, ${actionText} it!`
-        });
+        };
+        
+        if (newStatus == 1) {
+            // If activating, show warning about deactivating other videos
+            confirmConfig.text = 'This will activate this video and automatically deactivate all other videos. Only one video can be active at a time.';
+            confirmConfig.html = `
+                <p>This will activate this video and automatically <strong>deactivate all other videos</strong>.</p>
+                <p><i class="fas fa-info-circle" style="color: var(--accent-color);"></i> Only one video can be active at a time.</p>
+            `;
+            confirmConfig.icon = 'warning';
+        } else {
+            confirmConfig.text = `Are you sure you want to ${actionText} this video?`;
+        }
+        
+        const result = await Swal.fire(confirmConfig);
         
         if (result.isConfirmed) {
             try {
@@ -398,24 +387,155 @@ document.addEventListener('DOMContentLoaded', function() {
         currentEditVideoId = null;
     };
     
+    // Close edit modal
+    window.closeEditModal = function() {
+        document.getElementById('editVideoModal').style.display = 'none';
+        document.getElementById('editVideoForm').reset();
+        currentEditVideoId = null;
+    };
+    
+    // Validate edit form
+    function validateEditForm() {
+        const title = document.getElementById('edit_title').value.trim();
+        
+        if (!title) {
+            Swal.fire('Validation Error', 'Video title is required', 'warning');
+            return false;
+        }
+        
+        if (title.length > 255) {
+            Swal.fire('Validation Error', 'Video title is too long (maximum 255 characters)', 'warning');
+            return false;
+        }
+        
+        const description = document.getElementById('edit_description').value.trim();
+        if (description.length > 1000) {
+            Swal.fire('Validation Error', 'Description is too long (maximum 1000 characters)', 'warning');
+            return false;
+        }
+        
+        return true;
+    }
+    
+    // Handle edit form submission
+    async function handleEditVideoSubmit(e) {
+        e.preventDefault();
+        
+        if (!currentEditVideoId) {
+            await Swal.fire('Error', 'No video selected for editing', 'error');
+            return;
+        }
+        
+        // Validate form before submission
+        if (!validateEditForm()) {
+            return;
+        }
+        
+        // Validate form
+        const isValid = validateEditForm();
+        if (!isValid) {
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('action', 'edit_video_details');
+        formData.append('video_id', currentEditVideoId);
+        formData.append('title', document.getElementById('edit_title').value);
+        formData.append('description', document.getElementById('edit_description').value);
+        
+        // Show loading
+        Swal.fire({
+            title: 'Updating Video...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
+        
+        try {
+            const response = await fetch('video/ajax.php', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                await Swal.fire('Success', 'Video updated successfully!', 'success');
+                closeEditModal();
+                loadVideos(); // Reload videos to show updated data
+            } else {
+                await Swal.fire('Error', result.message || 'Failed to update video', 'error');
+            }
+        } catch (error) {
+            console.error('Error updating video:', error);
+            await Swal.fire('Error', 'Connection error', 'error');
+        }
+    }
+    
     // Filter videos
     function filterVideos() {
-        const statusFilter = document.getElementById('statusFilter').value;
+        const statusFilter = document.getElementById('statusFilter');
+        const filterValue = statusFilter.value;
         const cards = document.querySelectorAll('.video-card');
+        let visibleCount = 0;
         
         cards.forEach(card => {
-            const statusBadge = card.querySelector('.status-badge');
-            const isActive = statusBadge.classList.contains('status-active');
+            // Look for the status badge in the top-right corner
+            const statusBadge = card.querySelector('.video-badge.status-active, .video-badge.status-inactive');
+            const isActive = statusBadge && statusBadge.classList.contains('status-active');
             
             let showCard = true;
             
-            if (statusFilter === 'active' && !isActive) {
+            if (filterValue === 'active' && !isActive) {
                 showCard = false;
-            } else if (statusFilter === 'inactive' && isActive) {
+            } else if (filterValue === 'inactive' && isActive) {
                 showCard = false;
             }
             
             card.style.display = showCard ? 'block' : 'none';
+            if (showCard) visibleCount++;
         });
+        
+        // Add visual feedback for filtering state
+        if (filterValue) {
+            statusFilter.classList.add('filtering');
+        } else {
+            statusFilter.classList.remove('filtering');
+        }
+        
+        // Update results counter
+        updateFilterResults(visibleCount, cards.length, filterValue);
     }
+    
+    // Update filter results display
+    function updateFilterResults(visibleCount, totalCount, filterValue) {
+        // Remove existing results display
+        const existingResults = document.querySelector('.filter-results');
+        if (existingResults) {
+            existingResults.remove();
+        }
+        
+        // Add new results display if filtering is active
+        if (filterValue) {
+            const statusText = filterValue === 'active' ? 'active' : 'inactive';
+            const resultsElement = document.createElement('span');
+            resultsElement.className = 'filter-results';
+            resultsElement.textContent = `${visibleCount} ${statusText} video${visibleCount !== 1 ? 's' : ''}`;
+            
+            const statusFilter = document.getElementById('statusFilter');
+            statusFilter.parentNode.appendChild(resultsElement);
+        }
+    }
+    
+    // Close modals when clicking outside
+    window.onclick = function(event) {
+        const uploadModal = document.getElementById('videoModal');
+        const editModal = document.getElementById('editVideoModal');
+        
+        if (event.target === uploadModal) {
+            closeModal();
+        }
+        if (event.target === editModal) {
+            closeEditModal();
+        }
+    };
 });

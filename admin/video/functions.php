@@ -27,27 +27,33 @@ function getVideoById($videoId) {
     }
 }
 
-// Create new video
+// Create new video - inactive by default to maintain single active video rule
 function createVideo($title, $description, $location) {
     global $pdo;
     try {
         $stmt = $pdo->prepare("
             INSERT INTO video (Video_Title, Video_Description, Video_Location, Video_Status) 
-            VALUES (?, ?, ?, 1)
+            VALUES (?, ?, ?, 0)
         ");
         $stmt->execute([$title, $description, $location]);
         
-        return ['success' => true, 'message' => 'Video created successfully'];
+        return ['success' => true, 'message' => 'Video created successfully (inactive by default)'];
     } catch(PDOException $e) {
         error_log('Error in createVideo: ' . $e->getMessage());
         return ['success' => false, 'message' => 'Database error: ' . $e->getMessage()];
     }
 }
 
-// Update video
+// Update video - ensure only one video can be active
 function updateVideo($videoId, $title, $description, $location, $status) {
     global $pdo;
     try {
+        // If setting this video to active, deactivate all others first
+        if ($status == 1) {
+            $stmt = $pdo->prepare("UPDATE video SET Video_Status = 0");
+            $stmt->execute();
+        }
+        
         $stmt = $pdo->prepare("
             UPDATE video 
             SET Video_Title = ?, Video_Description = ?, Video_Location = ?, Video_Status = ?
@@ -55,9 +61,31 @@ function updateVideo($videoId, $title, $description, $location, $status) {
         ");
         $stmt->execute([$title, $description, $location, $status, $videoId]);
         
-        return ['success' => true, 'message' => 'Video updated successfully'];
+        $message = $status == 1 ? 
+            'Video updated and activated successfully. All other videos have been deactivated.' : 
+            'Video updated successfully';
+            
+        return ['success' => true, 'message' => $message];
     } catch(PDOException $e) {
         error_log('Error in updateVideo: ' . $e->getMessage());
+        return ['success' => false, 'message' => 'Database error: ' . $e->getMessage()];
+    }
+}
+
+// Update video details (title and description only)
+function updateVideoDetails($videoId, $title, $description) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("
+            UPDATE video 
+            SET Video_Title = ?, Video_Description = ?
+            WHERE Video_ID = ?
+        ");
+        $stmt->execute([$title, $description, $videoId]);
+        
+        return ['success' => true, 'message' => 'Video details updated successfully'];
+    } catch(PDOException $e) {
+        error_log('Error in updateVideoDetails: ' . $e->getMessage());
         return ['success' => false, 'message' => 'Database error: ' . $e->getMessage()];
     }
 }
@@ -90,15 +118,39 @@ function deleteVideo($videoId) {
     }
 }
 
-// Update video status
+// Get currently active video
+function getActiveVideo() {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM video WHERE Video_Status = 1 LIMIT 1");
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch(PDOException $e) {
+        error_log('Error in getActiveVideo: ' . $e->getMessage());
+        return false;
+    }
+}
+
+// Update video status - only one video can be active at a time
 function updateVideoStatus($videoId, $status) {
     global $pdo;
     try {
+        // If activating a video, first deactivate all other videos
+        if ($status == 1) {
+            $stmt = $pdo->prepare("UPDATE video SET Video_Status = 0");
+            $stmt->execute();
+        }
+        
+        // Now update the target video
         $stmt = $pdo->prepare("UPDATE video SET Video_Status = ? WHERE Video_ID = ?");
         $stmt->execute([$status, $videoId]);
         
         $statusText = $status == 1 ? 'activated' : 'deactivated';
-        return ['success' => true, 'message' => "Video {$statusText} successfully"];
+        $message = $status == 1 ? 
+            "Video {$statusText} successfully. All other videos have been deactivated." : 
+            "Video {$statusText} successfully";
+            
+        return ['success' => true, 'message' => $message];
     } catch(PDOException $e) {
         error_log('Error in updateVideoStatus: ' . $e->getMessage());
         return ['success' => false, 'message' => 'Database error: ' . $e->getMessage()];
