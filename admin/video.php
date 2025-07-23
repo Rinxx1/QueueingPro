@@ -13,6 +13,40 @@ include 'components/header.php';
     <p class="page-description">Manage promotional videos, announcements, and display content for the queue system.</p>
 </div>
 
+<!-- Global Video Controls Card -->
+<div class="content-card global-video-controls" style="margin-bottom: 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div class="global-controls-header">
+            <h3 style="color: white; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-broadcast-tower"></i>
+                Display Controls
+            </h3>
+            <p style="color: rgba(255,255,255,0.8); margin: 0.5rem 0 0 0; font-size: 0.9rem;">Control the public queue display remotely</p>
+        </div>
+        <div class="global-controls-actions" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+            <button id="globalMuteToggle" class="btn global-mute-btn" style="background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.3); color: white; padding: 0.7rem 1.2rem; border-radius: 25px; transition: all 0.3s ease;">
+                <i class="fas fa-volume-up"></i>
+                <span>Audio On</span>
+            </button>
+            <div class="volume-control-container" style="display: flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.15); padding: 0.5rem 1rem; border-radius: 20px; min-width: 150px;">
+                <i class="fas fa-volume-down" style="color: rgba(255,255,255,0.8); font-size: 0.9rem;"></i>
+                <input type="range" id="volumeSlider" min="0" max="100" value="50" 
+                       style="flex: 1; margin: 0 0.5rem; accent-color: white;">
+                <i class="fas fa-volume-up" style="color: rgba(255,255,255,0.8); font-size: 0.9rem;"></i>
+                <span id="volumeValue" style="color: white; font-size: 0.85rem; font-weight: 600; min-width: 35px;">50%</span>
+            </div>
+            <div class="global-status-indicator" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
+                <i class="fas fa-circle" style="color: #4CAF50; animation: pulse 2s infinite;"></i>
+                <span>Live Display</span>
+            </div>
+            <div class="current-display-status" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; opacity: 0.8;">
+                <i id="displayAudioIcon" class="fas fa-volume-up"></i>
+                <span id="displayAudioText">Audio: Loading...</span>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Video Management Actions -->
 <div class="content-card" style="margin-bottom: 2rem;">
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">

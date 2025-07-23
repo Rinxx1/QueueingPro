@@ -123,6 +123,28 @@ switch ($action) {
         echo json_encode($result);
         break;
         
+    case 'get_global_mute_status':
+        $result = getGlobalMuteStatus();
+        echo json_encode($result);
+        break;
+        
+    case 'toggle_global_mute':
+        $isMuted = $_POST['is_muted'] ?? 0;
+        $result = setGlobalMuteStatus($isMuted);
+        echo json_encode($result);
+        break;
+        
+    case 'get_global_volume':
+        $result = getGlobalVolume();
+        echo json_encode($result);
+        break;
+        
+    case 'set_global_volume':
+        $volume = $_POST['volume'] ?? 50;
+        $result = setGlobalVolume($volume);
+        echo json_encode($result);
+        break;
+        
     default:
         echo json_encode(['success' => false, 'message' => 'Invalid action']);
         break;

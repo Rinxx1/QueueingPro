@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentEditAwaitingId = null;
     
     // Load initial data
+    checkDailyReset(); // Check for daily reset first
     loadCounters();
     loadUsers();
     loadStats();
@@ -10,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Event listeners
     document.getElementById('addCounterBtn').addEventListener('click', openAddModal);
+    document.getElementById('resetQueueBtn').addEventListener('click', handleResetQueue);
     document.getElementById('counterForm').addEventListener('submit', handleCounterSubmit);
     document.getElementById('searchInput').addEventListener('input', filterCounters);
     document.getElementById('statusFilter').addEventListener('change', filterCounters);
@@ -35,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Load users for dropdown
+    // Load users for dropdown (only unassigned users)
     async function loadUsers() {
         try {
             const response = await fetch('counters/ajax.php?action=get_users');
@@ -46,6 +48,24 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (error) {
             console.error('Error loading users:', error);
+        }
+    }
+
+    // Load available users for a specific counter (when editing)
+    async function loadAvailableUsers(counterId = null) {
+        try {
+            const url = counterId 
+                ? `counters/ajax.php?action=get_available_users&counter_id=${counterId}`
+                : 'counters/ajax.php?action=get_users';
+            
+            const response = await fetch(url);
+            const result = await response.json();
+            
+            if (result.success) {
+                populateUserDropdowns(result.data);
+            }
+        } catch (error) {
+            console.error('Error loading available users:', error);
         }
     }
 
@@ -170,6 +190,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Auto-generate current number only
         generateCurrentNumber();
         
+        // Load only available (unassigned) users
+        loadAvailableUsers();
+        
         document.getElementById('counterModal').style.display = 'flex';
     }
     
@@ -201,6 +224,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (result.success) {
                 currentEditCounterId = counterId;
                 document.getElementById('modalTitle').textContent = 'Edit Counter';
+                
+                // Load available users for this counter (includes current operator)
+                await loadAvailableUsers(counterId);
                 
                 // Fill form with counter data
                 document.getElementById('counter_name').value = result.data.Counter_Name;
@@ -374,7 +400,14 @@ document.addEventListener('DOMContentLoaded', function() {
         users.forEach(user => {
             const option = document.createElement('option');
             option.value = user.User_ID;
-            option.textContent = user.FullName;
+            
+            // If user is assigned to another counter, show that information
+            if (user.CurrentCounterID && user.CurrentCounterName) {
+                option.textContent = `${user.FullName} (Currently at ${user.CurrentCounterName})`;
+            } else {
+                option.textContent = user.FullName;
+            }
+            
             userSelect.appendChild(option);
         });
     }
@@ -455,5 +488,80 @@ document.addEventListener('DOMContentLoaded', function() {
             
             row.style.display = matchesSearch && matchesStatus ? '' : 'none';
         });
+    }
+
+    // Check and perform daily reset if needed
+    async function checkDailyReset() {
+        try {
+            const response = await fetch('counters/ajax.php?action=check_daily_reset', {
+                method: 'POST'
+            });
+            const result = await response.json();
+            
+            if (result.success && result.message !== 'Reset already performed today') {
+                // A reset was performed, reload data
+                console.log('Daily reset performed:', result.message);
+                loadCounters();
+                loadStats();
+                loadAwaiting();
+            }
+        } catch (error) {
+            console.error('Error checking daily reset:', error);
+        }
+    }
+    
+    // Handle manual reset queue
+    async function handleResetQueue() {
+        const result = await Swal.fire({
+            title: 'Reset All Queue Numbers?',
+            text: 'This will reset all counter queue numbers to 000 and clear awaiting queues. This action cannot be undone!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#f39c12',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, Reset All!',
+            cancelButtonText: 'Cancel'
+        });
+        
+        if (result.isConfirmed) {
+            // Show loading
+            Swal.fire({
+                title: 'Resetting Queue Numbers...',
+                text: 'Please wait while we reset all counters.',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+            
+            try {
+                const response = await fetch('counters/ajax.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'action=reset_queue_numbers'
+                });
+                
+                const resetResult = await response.json();
+                
+                if (resetResult.success) {
+                    await Swal.fire({
+                        title: 'Reset Successful!',
+                        text: resetResult.message,
+                        icon: 'success',
+                        confirmButtonColor: '#28a745'
+                    });
+                    
+                    // Reload all data
+                    loadCounters();
+                    loadStats();
+                    loadAwaiting();
+                } else {
+                    await Swal.fire('Error', resetResult.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error resetting queue:', error);
+                await Swal.fire('Error', 'Connection error while resetting queue numbers', 'error');
+            }
+        }
     }
 });

@@ -45,7 +45,6 @@ include 'components/header.php';
                 <th>Last Name</th>
                 <th>Username</th>
                 <th>Role</th>
-                <th>Counter</th>
                 <th>Status</th>
                 <th>Created</th>
                 <th>Actions</th>
@@ -85,20 +84,12 @@ include 'components/header.php';
                     <input type="password" id="password" name="password" required>
                     <small style="color: var(--medium-gray);">Leave blank to keep current password (for editing)</small>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                    <div>
-                        <label for="user_level">Role *</label>
-                        <select id="user_level" name="user_level" required>
-                            <option value="0">Administrator</option>
-                            <option value="1" selected>Controller</option>
-                        </select>
-                    </div>
-                     <div>
-                        <label for="counter_id">Counter Assignment</label>
-                        <select id="counter_id" name="counter_id">
-                       
-                        </select>
-                    </div> 
+                <div style="margin-bottom: 1rem;">
+                    <label for="user_level">Role *</label>
+                    <select id="user_level" name="user_level" required>
+                        <option value="0">Administrator</option>
+                        <option value="1" selected>Controller</option>
+                    </select>
                 </div>
                 <div id="statusField" style="margin-bottom: 1rem; display: none;">
                     <label for="status">Status</label>

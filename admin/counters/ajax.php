@@ -74,11 +74,17 @@ switch ($action) {
         echo json_encode(['success' => true, 'data' => $users]);
         break;
 
+    case 'get_available_users':
+        $counterId = $_GET['counter_id'] ?? null;
+        $users = getAvailableUsersForCounter($counterId);
+        echo json_encode(['success' => true, 'data' => $users]);
+        break;
+
     case 'get_next_counter_name':
         $nextCurrentNumber = getNextCounterName();
         echo json_encode(['success' => true, 'data' => $nextCurrentNumber]);
         break;
-
+        
     case 'get_stats':
         $stats = getCounterStats();
         echo json_encode(['success' => true, 'data' => $stats]);
@@ -182,6 +188,16 @@ switch ($action) {
         
         $awaitingQueue = getAwaitingQueueForCounter($counterId);
         echo json_encode(['success' => true, 'data' => $awaitingQueue]);
+        break;
+
+    case 'reset_queue_numbers':
+        $result = manualResetQueueNumbers();
+        echo json_encode($result);
+        break;
+        
+    case 'check_daily_reset':
+        $result = checkAndPerformDailyReset();
+        echo json_encode($result);
         break;
 
     default:

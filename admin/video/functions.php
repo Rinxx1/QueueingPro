@@ -207,4 +207,137 @@ function handleVideoUpload($file, $title, $description) {
         return ['success' => false, 'message' => 'Failed to upload file'];
     }
 }
+
+// Global Mute Control Functions
+
+// Get global mute status
+function getGlobalMuteStatus() {
+    global $pdo;
+    try {
+        // First, check if settings table exists and has our mute setting
+        $stmt = $pdo->prepare("
+            SELECT COUNT(*) as count FROM information_schema.tables 
+            WHERE table_schema = DATABASE() AND table_name = 'settings'
+        ");
+        $stmt->execute();
+        $tableExists = $stmt->fetch(PDO::FETCH_ASSOC)['count'] > 0;
+        
+        if (!$tableExists) {
+            // Create settings table if it doesn't exist
+            $pdo->exec("
+                CREATE TABLE IF NOT EXISTS settings (
+                    setting_key VARCHAR(100) PRIMARY KEY,
+                    setting_value TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                )
+            ");
+            
+            // Insert default mute setting
+            $stmt = $pdo->prepare("
+                INSERT INTO settings (setting_key, setting_value) 
+                VALUES ('global_video_muted', '0')
+            ");
+            $stmt->execute();
+            
+            return ['success' => true, 'data' => ['is_muted' => false]];
+        }
+        
+        // Get the mute status
+        $stmt = $pdo->prepare("SELECT setting_value FROM settings WHERE setting_key = 'global_video_muted'");
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$result) {
+            // Insert default if not exists
+            $stmt = $pdo->prepare("
+                INSERT INTO settings (setting_key, setting_value) 
+                VALUES ('global_video_muted', '0')
+            ");
+            $stmt->execute();
+            
+            return ['success' => true, 'data' => ['is_muted' => false]];
+        }
+        
+        return ['success' => true, 'data' => ['is_muted' => (bool)$result['setting_value']]];
+        
+    } catch(PDOException $e) {
+        error_log('Error in getGlobalMuteStatus: ' . $e->getMessage());
+        return ['success' => false, 'message' => 'Database error: ' . $e->getMessage()];
+    }
+}
+
+// Set global mute status
+function setGlobalMuteStatus($isMuted) {
+    global $pdo;
+    try {
+        $muteValue = $isMuted ? '1' : '0';
+        
+        $stmt = $pdo->prepare("
+            INSERT INTO settings (setting_key, setting_value) 
+            VALUES ('global_video_muted', ?) 
+            ON DUPLICATE KEY UPDATE setting_value = ?, updated_at = CURRENT_TIMESTAMP
+        ");
+        $stmt->execute([$muteValue, $muteValue]);
+        
+        return ['success' => true, 'message' => 'Global mute status updated successfully'];
+        
+    } catch(PDOException $e) {
+        error_log('Error in setGlobalMuteStatus: ' . $e->getMessage());
+        return ['success' => false, 'message' => 'Database error: ' . $e->getMessage()];
+    }
+}
+
+// Global Volume Control Functions
+
+// Get global volume setting
+function getGlobalVolume() {
+    global $pdo;
+    try {
+        // Get the volume setting
+        $stmt = $pdo->prepare("SELECT Volume FROM settings WHERE setting_key = 'global_video_volume'");
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$result) {
+            // Insert default volume if not exists (50%)
+            $stmt = $pdo->prepare("
+                INSERT INTO settings (setting_key, setting_value, Volume) 
+                VALUES ('global_video_volume', '50', 50)
+            ");
+            $stmt->execute();
+            
+            return ['success' => true, 'data' => ['volume' => 50]];
+        }
+        
+        return ['success' => true, 'data' => ['volume' => (int)$result['Volume']]];
+        
+    } catch(PDOException $e) {
+        error_log('Error in getGlobalVolume: ' . $e->getMessage());
+        return ['success' => false, 'message' => 'Database error: ' . $e->getMessage()];
+    }
+}
+
+// Set global volume setting
+function setGlobalVolume($volume) {
+    global $pdo;
+    try {
+        // Ensure volume is within valid range (0-100)
+        $volume = max(0, min(100, (int)$volume));
+        
+        $stmt = $pdo->prepare("
+            INSERT INTO settings (setting_key, setting_value, Volume) 
+            VALUES ('global_video_volume', ?, ?) 
+            ON DUPLICATE KEY UPDATE setting_value = ?, Volume = ?, updated_at = CURRENT_TIMESTAMP
+        ");
+        $stmt->execute([$volume, $volume, $volume, $volume]);
+        
+        return ['success' => true, 'message' => 'Global volume updated successfully'];
+        
+    } catch(PDOException $e) {
+        error_log('Error in setGlobalVolume: ' . $e->getMessage());
+        return ['success' => false, 'message' => 'Database error: ' . $e->getMessage()];
+    }
+}
+
 ?>

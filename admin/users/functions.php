@@ -31,7 +31,7 @@ function getUserById($userId) {
 }
 
 // Create new user
-function createUser($firstname, $lastname, $username, $password, $userLevel, $counterId) {
+function createUser($firstname, $lastname, $username, $password, $userLevel) {
     global $pdo;
     try {
         // Check if username already exists
@@ -45,10 +45,10 @@ function createUser($firstname, $lastname, $username, $password, $userLevel, $co
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
         
         $stmt = $pdo->prepare("
-            INSERT INTO users (Firstname, Lastname, Username, Password, User_Lvl, Status, User_Created, Counter_ID) 
-            VALUES (?, ?, ?, ?, ?, 1, NOW(), ?)
+            INSERT INTO users (Firstname, Lastname, Username, Password, User_Lvl, Status, User_Created) 
+            VALUES (?, ?, ?, ?, ?, 1, NOW())
         ");
-        $stmt->execute([$firstname, $lastname, $username, $hashedPassword, $userLevel, $counterId]);
+        $stmt->execute([$firstname, $lastname, $username, $hashedPassword, $userLevel]);
         
         return ['success' => true, 'message' => 'User created successfully'];
     } catch(PDOException $e) {
@@ -57,7 +57,7 @@ function createUser($firstname, $lastname, $username, $password, $userLevel, $co
 }
 
 // Update user
-function updateUser($userId, $firstname, $lastname, $username, $userLevel, $status, $counterId, $password = null) {
+function updateUser($userId, $firstname, $lastname, $username, $userLevel, $status, $password = null) {
     global $pdo;
     try {
         // Check if username exists for other users
@@ -72,18 +72,18 @@ function updateUser($userId, $firstname, $lastname, $username, $userLevel, $stat
             $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
             $stmt = $pdo->prepare("
                 UPDATE users 
-                SET Firstname = ?, Lastname = ?, Username = ?, Password = ?, User_Lvl = ?, Status = ?, Counter_ID = ?
+                SET Firstname = ?, Lastname = ?, Username = ?, Password = ?, User_Lvl = ?, Status = ?
                 WHERE User_ID = ?
             ");
-            $stmt->execute([$firstname, $lastname, $username, $hashedPassword, $userLevel, $status, $counterId, $userId]);
+            $stmt->execute([$firstname, $lastname, $username, $hashedPassword, $userLevel, $status, $userId]);
         } else {
             // Update without password
             $stmt = $pdo->prepare("
                 UPDATE users 
-                SET Firstname = ?, Lastname = ?, Username = ?, User_Lvl = ?, Status = ?, Counter_ID = ?
+                SET Firstname = ?, Lastname = ?, Username = ?, User_Lvl = ?, Status = ?
                 WHERE User_ID = ?
             ");
-            $stmt->execute([$firstname, $lastname, $username, $userLevel, $status, $counterId, $userId]);
+            $stmt->execute([$firstname, $lastname, $username, $userLevel, $status, $userId]);
         }
         
         return ['success' => true, 'message' => 'User updated successfully'];
@@ -105,15 +105,5 @@ function deleteUser($userId) {
     }
 }
 
-// Get counters for dropdown
-function getCountersForDropdown() {
-    global $pdo;
-    try {
-        $stmt = $pdo->prepare("SELECT Counter_ID, Counter_Name FROM counters ORDER BY Counter_Name");
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch(PDOException $e) {
-        return [];
-    }
-}
+
 ?>

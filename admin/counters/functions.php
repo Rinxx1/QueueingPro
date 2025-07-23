@@ -39,14 +39,14 @@ function getNextCounterName() {
         for ($i = 0; $i < 26; $i++) {
             $letter = chr(65 + $i); // A = 65, B = 66, etc.
             if (!in_array($letter, $usedLetters)) {
-                return $letter . '001';
+                return $letter . '000'; // Changed from 001 to 000
             }
         }
         
         // If all letters are used, return null or handle as needed
         return null;
     } catch(PDOException $e) {
-        return 'A001'; // Default fallback
+        return 'A000'; // Default fallback changed to A000
     }
 }
 
@@ -73,6 +73,16 @@ function createCounter($counterName, $counterDescription, $currentNumber, $statu
             return ['success' => false, 'message' => 'Counter name already exists'];
         }
 
+        // Check if user is already assigned to another counter
+        if ($userId) {
+            $checkUserStmt = $pdo->prepare("SELECT Counter_Name FROM counters WHERE User_ID = ?");
+            $checkUserStmt->execute([$userId]);
+            $existingCounter = $checkUserStmt->fetch(PDO::FETCH_ASSOC);
+            if ($existingCounter) {
+                return ['success' => false, 'message' => 'This operator is already assigned to ' . $existingCounter['Counter_Name']];
+            }
+        }
+
         $stmt = $pdo->prepare("
             INSERT INTO counters (Counter_Name, Counter_Description, Counter_CurrentNumber, Counter_Status, User_ID) 
             VALUES (?, ?, ?, ?, ?)
@@ -94,6 +104,16 @@ function updateCounter($counterId, $counterName, $counterDescription, $currentNu
         $checkStmt->execute([$counterName, $counterId]);
         if ($checkStmt->fetchColumn() > 0) {
             return ['success' => false, 'message' => 'Counter name already exists'];
+        }
+
+        // Check if user is already assigned to another counter (excluding current counter)
+        if ($userId) {
+            $checkUserStmt = $pdo->prepare("SELECT Counter_Name FROM counters WHERE User_ID = ? AND Counter_ID != ?");
+            $checkUserStmt->execute([$userId, $counterId]);
+            $existingCounter = $checkUserStmt->fetch(PDO::FETCH_ASSOC);
+            if ($existingCounter) {
+                return ['success' => false, 'message' => 'This operator is already assigned to ' . $existingCounter['Counter_Name']];
+            }
         }
 
         $stmt = $pdo->prepare("
@@ -129,18 +149,47 @@ function deleteCounter($counterId) {
     }
 }
 
-// Get users for dropdown (controllers only)
+// Get users for dropdown (controllers only) - exclude already assigned operators
 function getUsersForDropdown() {
     global $pdo;
     try {
         $stmt = $pdo->prepare("
-            SELECT User_ID, Username, Firstname, Lastname, 
-                   CONCAT(Firstname, ' ', Lastname) as FullName
-            FROM users 
-            WHERE User_Lvl = 1 AND Status = 1
-            ORDER BY Firstname, Lastname
+            SELECT u.User_ID, u.Username, u.Firstname, u.Lastname, 
+                   CONCAT(u.Firstname, ' ', u.Lastname) as FullName
+            FROM users u 
+            WHERE u.User_Lvl = 1 AND u.Status = 1
+            AND u.User_ID NOT IN (
+                SELECT c.User_ID 
+                FROM counters c 
+                WHERE c.User_ID IS NOT NULL
+            )
+            ORDER BY u.Firstname, u.Lastname
         ");
         $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch(PDOException $e) {
+        return [];
+    }
+}
+
+// Get available users for a specific counter (when editing, include current operator)
+function getAvailableUsersForCounter($counterId = null) {
+    global $pdo;
+    try {
+        $sql = "
+            SELECT u.User_ID, u.Username, u.Firstname, u.Lastname, 
+                   CONCAT(u.Firstname, ' ', u.Lastname) as FullName,
+                   c.Counter_ID as CurrentCounterID,
+                   c.Counter_Name as CurrentCounterName
+            FROM users u 
+            LEFT JOIN counters c ON u.User_ID = c.User_ID
+            WHERE u.User_Lvl = 1 AND u.Status = 1
+            AND (c.User_ID IS NULL OR c.Counter_ID = ?)
+            ORDER BY u.Firstname, u.Lastname
+        ";
+        
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([$counterId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch(PDOException $e) {
         return [];
@@ -294,6 +343,118 @@ function getAwaitingQueueForCounter($counterId) {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch(PDOException $e) {
         return [];
+    }
+}
+
+// Create system_logs table if it doesn't exist
+function createSystemLogsTable() {
+    global $pdo;
+    try {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS system_logs (
+                log_id INT AUTO_INCREMENT PRIMARY KEY,
+                log_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                log_action VARCHAR(50) NOT NULL,
+                log_details TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ");
+        return true;
+    } catch(PDOException $e) {
+        error_log('Error creating system_logs table: ' . $e->getMessage());
+        return false;
+    }
+}
+
+// Reset all queue numbers daily
+function resetDailyQueueNumbers() {
+    global $pdo;
+    try {
+        // Ensure system_logs table exists
+        createSystemLogsTable();
+        
+        // Reset all counters to their base numbers (A000, B000, etc.)
+        $stmt = $pdo->prepare("
+            UPDATE counters 
+            SET Counter_CurrentNumber = CONCAT(LEFT(Counter_CurrentNumber, 1), '000')
+            WHERE Counter_CurrentNumber REGEXP '^[A-Z][0-9]{3}$'
+        ");
+        $stmt->execute();
+        
+        // Clear any awaiting queues
+        $stmt = $pdo->prepare("DELETE FROM awaiting");
+        $stmt->execute();
+        
+        // Log the reset action
+        $stmt = $pdo->prepare("
+            INSERT INTO system_logs (log_date, log_action, log_details) 
+            VALUES (NOW(), 'DAILY_RESET', 'Queue numbers reset to 000 for all counters')
+        ");
+        $stmt->execute();
+        
+        return ['success' => true, 'message' => 'Queue numbers reset successfully'];
+    } catch(PDOException $e) {
+        return ['success' => false, 'message' => 'Database error: ' . $e->getMessage()];
+    }
+}
+
+// Check if daily reset is needed and perform it
+function checkAndPerformDailyReset() {
+    global $pdo;
+    try {
+        // Ensure system_logs table exists
+        createSystemLogsTable();
+        
+        // Check if we've already reset today
+        $stmt = $pdo->prepare("
+            SELECT COUNT(*) as reset_count 
+            FROM system_logs 
+            WHERE DATE(log_date) = CURDATE() 
+            AND log_action = 'DAILY_RESET'
+        ");
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($result['reset_count'] == 0) {
+            // No reset performed today, do it now
+            return resetDailyQueueNumbers();
+        }
+        
+        return ['success' => true, 'message' => 'Reset already performed today'];
+    } catch(PDOException $e) {
+        return ['success' => false, 'message' => 'Database error: ' . $e->getMessage()];
+    }
+}
+
+// Manual reset function for admin
+function manualResetQueueNumbers() {
+    global $pdo;
+    try {
+        // Ensure system_logs table exists
+        createSystemLogsTable();
+        
+        // Reset all counters to their base numbers (A000, B000, etc.)
+        $stmt = $pdo->prepare("
+            UPDATE counters 
+            SET Counter_CurrentNumber = CONCAT(LEFT(Counter_CurrentNumber, 1), '000')
+            WHERE Counter_CurrentNumber REGEXP '^[A-Z][0-9]{3}$'
+        ");
+        $stmt->execute();
+        
+        // Clear any awaiting queues
+        $stmt = $pdo->prepare("DELETE FROM awaiting");
+        $stmt->execute();
+        
+        // Log the manual reset action
+        $stmt = $pdo->prepare("
+            INSERT INTO system_logs (log_date, log_action, log_details) 
+            VALUES (NOW(), 'MANUAL_RESET', 'Queue numbers manually reset by admin')
+        ");
+        $stmt->execute();
+        
+        return ['success' => true, 'message' => 'Queue numbers reset successfully'];
+    } catch(PDOException $e) {
+        return ['success' => false, 'message' => 'Database error: ' . $e->getMessage()];
     }
 }
 ?>

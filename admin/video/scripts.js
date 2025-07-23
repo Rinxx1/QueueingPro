@@ -11,6 +11,15 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('statusFilter').addEventListener('change', filterVideos);
     document.getElementById('video_file').addEventListener('change', handleFileSelect);
     
+    // Global video controls
+    document.getElementById('globalMuteToggle').addEventListener('click', toggleGlobalMute);
+    document.getElementById('volumeSlider').addEventListener('input', handleVolumeChange);
+    document.getElementById('volumeSlider').addEventListener('change', updateGlobalVolume);
+    
+    // Load initial global mute status and volume
+    loadGlobalMuteStatus();
+    loadGlobalVolume();
+    
     // Load videos from database
     async function loadVideos() {
         try {
@@ -526,6 +535,160 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // Global Mute Control Functions
+    async function loadGlobalMuteStatus() {
+        try {
+            const response = await fetch('video/ajax.php?action=get_global_mute_status');
+            const result = await response.json();
+            
+            if (result.success) {
+                updateGlobalMuteButton(result.data.is_muted);
+            }
+        } catch (error) {
+            console.error('Error loading global mute status:', error);
+        }
+    }
+
+    async function toggleGlobalMute() {
+        const button = document.getElementById('globalMuteToggle');
+        const currentlyMuted = button.classList.contains('muted');
+        const newMuteState = !currentlyMuted;
+        
+        try {
+            // Show loading state
+            button.disabled = true;
+            button.style.opacity = '0.6';
+            
+            const response = await fetch('video/ajax.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `action=toggle_global_mute&is_muted=${newMuteState ? 1 : 0}`
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                updateGlobalMuteButton(newMuteState);
+                
+                // Show success message
+                await Swal.fire({
+                    title: 'Success!',
+                    text: `Display audio ${newMuteState ? 'muted' : 'unmuted'} successfully`,
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false,
+                    toast: true,
+                    position: 'top-end'
+                });
+            } else {
+                await Swal.fire('Error', result.message || 'Failed to update mute status', 'error');
+            }
+        } catch (error) {
+            console.error('Error toggling global mute:', error);
+            await Swal.fire('Error', 'Connection error: ' + error.message, 'error');
+        } finally {
+            // Restore button state
+            button.disabled = false;
+            button.style.opacity = '1';
+        }
+    }
+
+    function updateGlobalMuteButton(isMuted) {
+        const button = document.getElementById('globalMuteToggle');
+        const icon = button.querySelector('i');
+        const text = button.querySelector('span');
+        
+        // Update main button
+        if (isMuted) {
+            button.classList.add('muted');
+            button.classList.remove('unmuted');
+            icon.className = 'fas fa-volume-mute';
+            text.textContent = 'Audio Off';
+            button.title = 'Click to unmute display audio';
+        } else {
+            button.classList.add('unmuted');
+            button.classList.remove('muted');
+            icon.className = 'fas fa-volume-up';
+            text.textContent = 'Audio On';
+            button.title = 'Click to mute display audio';
+        }
+        
+        // Update status indicator
+        const statusIcon = document.getElementById('displayAudioIcon');
+        const statusText = document.getElementById('displayAudioText');
+        
+        if (statusIcon && statusText) {
+            if (isMuted) {
+                statusIcon.className = 'fas fa-volume-mute';
+                statusIcon.style.color = '#ff4757';
+                statusText.textContent = 'Audio: Muted';
+            } else {
+                statusIcon.className = 'fas fa-volume-up';
+                statusIcon.style.color = '#2ed573';
+                statusText.textContent = 'Audio: On';
+            }
+        }
+    }
+
+    // Volume Control Functions
+    async function loadGlobalVolume() {
+        try {
+            const response = await fetch('video/ajax.php?action=get_global_volume');
+            const result = await response.json();
+            
+            if (result.success) {
+                updateVolumeSlider(result.data.volume);
+            }
+        } catch (error) {
+            console.error('Error loading global volume:', error);
+        }
+    }
+
+    function handleVolumeChange(event) {
+        const volume = event.target.value;
+        updateVolumeDisplay(volume);
+    }
+
+    async function updateGlobalVolume() {
+        const volumeSlider = document.getElementById('volumeSlider');
+        const volume = volumeSlider.value;
+        
+        try {
+            const response = await fetch('video/ajax.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `action=set_global_volume&volume=${volume}`
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                console.log('Global volume updated to:', volume + '%');
+            } else {
+                console.error('Failed to update volume:', result.message);
+            }
+        } catch (error) {
+            console.error('Error updating global volume:', error);
+        }
+    }
+
+    function updateVolumeSlider(volume) {
+        const volumeSlider = document.getElementById('volumeSlider');
+        const volumeValue = document.getElementById('volumeValue');
+        
+        volumeSlider.value = volume;
+        volumeValue.textContent = volume + '%';
+    }
+
+    function updateVolumeDisplay(volume) {
+        const volumeValue = document.getElementById('volumeValue');
+        volumeValue.textContent = volume + '%';
+    }
+
     // Close modals when clicking outside
     window.onclick = function(event) {
         const uploadModal = document.getElementById('videoModal');

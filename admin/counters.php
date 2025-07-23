@@ -50,10 +50,16 @@ include 'components/header.php';
                 <option value="Offline">Offline</option>
             </select>
         </div>
-        <button id="addCounterBtn" class="btn btn-primary">
-            <i class="fas fa-plus"></i>
-            Add New Counter
-        </button>
+        <div style="display: flex; gap: 1rem;">
+            <button id="resetQueueBtn" class="btn btn-warning">
+                <i class="fas fa-redo"></i>
+                Reset Queue Numbers
+            </button>
+            <button id="addCounterBtn" class="btn btn-primary">
+                <i class="fas fa-plus"></i>
+                Add New Counter
+            </button>
+        </div>
     </div>
 </div>
 
@@ -96,8 +102,8 @@ include 'components/header.php';
                 </div>
                 <div style="margin-bottom: 1rem;">
                     <label for="current_number">Current Number *</label>
-                    <input type="text" id="current_number" name="current_number" required placeholder="e.g., A001, B001" readonly style="background-color: #f8f9fa;">
-                    <small style="color: #6c757d; font-size: 0.875rem;">Auto-generated alphabetically (A001, B001, etc.)</small>
+                    <input type="text" id="current_number" name="current_number" required placeholder="e.g., A000, B000" readonly style="background-color: #f8f9fa;">
+                    <small style="color: #6c757d; font-size: 0.875rem;">Auto-generated alphabetically (A000, B000, etc.)</small>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                     <div>

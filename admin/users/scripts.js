@@ -3,7 +3,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load initial data
     loadUsers();
-    loadCounters();
     
     // Event listeners
     document.getElementById('addUserBtn').addEventListener('click', openAddModal);
@@ -28,19 +27,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Load counters for dropdown
-    async function loadCounters() {
-        try {
-            const response = await fetch('users/ajax.php?action=get_counters');
-            const result = await response.json();
-            
-            if (result.success) {
-                populateCounterDropdowns(result.data);
-            }
-        } catch (error) {
-            console.error('Error loading counters:', error);
-        }
-    }
     
     // Display users in table
     function displayUsers(users) {
@@ -66,7 +52,6 @@ document.addEventListener('DOMContentLoaded', function() {
             <td>${user.Lastname}</td>
             <td>${user.Username}</td>
             <td><span class="role-badge role-${user.User_Lvl}">${userLevelName}</span></td>
-            <td>${user.Counter_Name || 'Not Assigned'}</td>
             <td><span class="status-badge ${statusClass}">${statusText}</span></td>
             <td>${formatDate(user.User_Created)}</td>
             <td>
@@ -109,7 +94,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('username').value = user.Username;
                 document.getElementById('user_level').value = user.User_Lvl;
                 document.getElementById('status').value = user.Status;
-                document.getElementById('counter_id').value = user.Counter_ID || '';
                 document.getElementById('password').value = '';
                 document.getElementById('password').required = false;
                 
@@ -251,17 +235,5 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    function populateCounterDropdowns(counters) {
-        const counterSelects = document.querySelectorAll('#counter_id');
-        
-        counterSelects.forEach(select => {
-            select.innerHTML = '<option value="">Not Assigned</option>';
-            counters.forEach(counter => {
-                const option = document.createElement('option');
-                option.value = counter.Counter_ID;
-                option.textContent = counter.Counter_Name;
-                select.appendChild(option);
-            });
-        });
-    }
+
 });

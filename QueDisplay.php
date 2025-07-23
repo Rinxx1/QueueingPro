@@ -30,6 +30,27 @@ try {
     // Handle error silently for display
     $activeVideo = null;
 }
+
+// Get global mute status and volume
+$globalMuted = false;
+$globalVolume = 50; // Default volume 50%
+try {
+    $stmt = $pdo->prepare("SELECT setting_key, setting_value, Volume FROM settings WHERE setting_key IN ('global_video_muted', 'global_video_volume')");
+    $stmt->execute();
+    $settings = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    foreach ($settings as $setting) {
+        if ($setting['setting_key'] === 'global_video_muted') {
+            $globalMuted = (bool)$setting['setting_value'];
+        } elseif ($setting['setting_key'] === 'global_video_volume') {
+            $globalVolume = (int)$setting['Volume'];
+        }
+    }
+} catch(PDOException $e) {
+    // Handle error silently, use defaults
+    $globalMuted = false;
+    $globalVolume = 50;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -126,7 +147,9 @@ try {
             <section class="video-section">
                 <div class="video-player-container">
                     <div class="video-content">
-                        <video id="displayVideo" autoplay muted loop preload="auto">
+                        <video id="displayVideo" autoplay <?php echo $globalMuted ? 'muted' : ''; ?> loop preload="auto" 
+                               data-global-muted="<?php echo $globalMuted ? '1' : '0'; ?>" 
+                               data-global-volume="<?php echo $globalVolume; ?>">
                             <?php if ($activeVideo && !empty($activeVideo['Video_Location'])): ?>
                                 <source src="<?php echo htmlspecialchars($activeVideo['Video_Location']); ?>" type="video/mp4">
                             <?php endif; ?>

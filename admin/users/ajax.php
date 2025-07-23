@@ -36,14 +36,13 @@ switch ($action) {
         $username = trim($_POST['username'] ?? '');
         $password = $_POST['password'] ?? '';
         $userLevel = $_POST['user_level'] ?? 1;
-        $counterId = $_POST['counter_id'] ?? null;
         
         if (empty($firstname) || empty($lastname) || empty($username) || empty($password)) {
             echo json_encode(['success' => false, 'message' => 'All fields are required']);
             break;
         }
         
-        $result = createUser($firstname, $lastname, $username, $password, $userLevel, $counterId);
+        $result = createUser($firstname, $lastname, $username, $password, $userLevel);
         echo json_encode($result);
         break;
         
@@ -55,14 +54,13 @@ switch ($action) {
         $password = $_POST['password'] ?? '';
         $userLevel = $_POST['user_level'] ?? 1;
         $status = $_POST['status'] ?? 'Active';
-        $counterId = $_POST['counter_id'] ?? null;
         
         if (empty($firstname) || empty($lastname) || empty($username)) {
             echo json_encode(['success' => false, 'message' => 'Required fields are missing']);
             break;
         }
         
-        $result = updateUser($userId, $firstname, $lastname, $username, $userLevel, $status, $counterId, $password);
+        $result = updateUser($userId, $firstname, $lastname, $username, $userLevel, $status, $password);
         echo json_encode($result);
         break;
         
@@ -72,11 +70,7 @@ switch ($action) {
         echo json_encode($result);
         break;
         
-    case 'get_counters':
-        $counters = getCountersForDropdown();
-        echo json_encode(['success' => true, 'data' => $counters]);
-        break;
-        
+
     default:
         echo json_encode(['success' => false, 'message' => 'Invalid action']);
         break;

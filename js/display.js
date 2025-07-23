@@ -154,6 +154,16 @@ class QueueDisplay {
                     // No active video
                     this.handleVideoUpdate(null);
                 }
+                
+                // Handle global mute status
+                if (result.hasOwnProperty('global_muted')) {
+                    this.handleGlobalMuteUpdate(result.global_muted);
+                }
+                
+                // Handle global volume
+                if (result.hasOwnProperty('global_volume')) {
+                    this.handleGlobalVolumeUpdate(result.global_volume);
+                }
             } else {
                 console.error('Error fetching queue data:', result.message);
                 this.handleDataError();
@@ -428,6 +438,19 @@ class QueueDisplay {
             this.currentVideoLocation = currentSource.src;
             // We don't have the video ID initially, it will be set on first data fetch
         }
+        
+        // Initialize global mute status and volume from data attributes
+        const globalMuted = video.getAttribute('data-global-muted') === '1';
+        const globalVolume = parseInt(video.getAttribute('data-global-volume')) || 50;
+        
+        if (globalMuted) {
+            video.muted = true;
+            console.log('Video initialized with global mute status: muted');
+        }
+        
+        // Set initial volume (convert percentage to decimal)
+        video.volume = globalVolume / 100;
+        console.log('Video initialized with global volume:', globalVolume + '%');
 
         // Check initial video state
         setTimeout(() => {
@@ -661,6 +684,33 @@ class QueueDisplay {
                 console.log('Video is playing but loading indicator is showing. Correcting...');
                 this.handleVideoState('playing');
             }
+        }
+    }
+
+    // Handle global mute status updates from admin
+    handleGlobalMuteUpdate(globalMuted) {
+        const video = document.getElementById('displayVideo');
+        if (!video) return;
+        
+        // Only update if the mute status has changed
+        if (video.muted !== globalMuted) {
+            video.muted = globalMuted;
+            console.log('Global mute status updated:', globalMuted ? 'muted' : 'unmuted');
+        }
+    }
+
+    // Handle global volume updates from admin
+    handleGlobalVolumeUpdate(globalVolume) {
+        const video = document.getElementById('displayVideo');
+        if (!video) return;
+        
+        // Convert percentage to decimal (0-1)
+        const volumeLevel = globalVolume / 100;
+        
+        // Only update if the volume has changed
+        if (Math.abs(video.volume - volumeLevel) > 0.01) {
+            video.volume = volumeLevel;
+            console.log('Global volume updated to:', globalVolume + '%');
         }
     }
 }

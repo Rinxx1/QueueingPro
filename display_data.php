@@ -86,10 +86,34 @@ try {
         error_log('Error fetching video: ' . $e->getMessage());
     }
     
+    // Get global mute status and volume
+    $globalMuted = false;
+    $globalVolume = 50;
+    try {
+        $stmt = $pdo->prepare("SELECT setting_key, setting_value, Volume FROM settings WHERE setting_key IN ('global_video_muted', 'global_video_volume')");
+        $stmt->execute();
+        $settings = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        foreach ($settings as $setting) {
+            if ($setting['setting_key'] === 'global_video_muted') {
+                $globalMuted = (bool)$setting['setting_value'];
+            } elseif ($setting['setting_key'] === 'global_video_volume') {
+                $globalVolume = (int)$setting['Volume'];
+            }
+        }
+    } catch(PDOException $e) {
+        // Handle error silently, use defaults
+        error_log('Error fetching audio settings: ' . $e->getMessage());
+        $globalMuted = false;
+        $globalVolume = 50;
+    }
+    
     echo json_encode([
         'success' => true,
         'data' => $counters,
         'video' => $activeVideo,
+        'global_muted' => $globalMuted,
+        'global_volume' => $globalVolume,
         'timestamp' => date('Y-m-d H:i:s')
     ]);
     
