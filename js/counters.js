@@ -153,11 +153,40 @@ document.addEventListener('DOMContentLoaded', function() {
 
         document.getElementById('ticketNumber').textContent = generatedQueueNumber;
         document.getElementById('ticketService').textContent = selectedCounter.name;
-        document.getElementById('ticketWait').textContent = selectedCounter.wait;
-        document.getElementById('ticketAhead').textContent = Math.floor(Math.random() * 10) + 1;
+        
+        // Use queue data if available, otherwise fallback to default
+        if (queueData) {
+            const waitTime = queueData.estimated_wait_minutes;
+            const waitText = waitTime <= 1 ? '1 minute' : `${waitTime} minutes`;
+            document.getElementById('ticketWait').textContent = waitText;
+            document.getElementById('ticketAhead').textContent = queueData.people_ahead || 0;
+        } else {
+            document.getElementById('ticketWait').textContent = selectedCounter.wait;
+            document.getElementById('ticketAhead').textContent = Math.floor(Math.random() * 10) + 1;
+        }
         
         const now = new Date();
         document.getElementById('ticketDate').textContent = now.toLocaleDateString();
+    }
+
+    // Update queue information in confirmation modal
+    function updateQueueInfo(data) {
+        if (!data) return;
+        
+        // Add queue info to the confirmation modal if elements exist
+        const queueInfoContainer = document.querySelector('.queue-info-display');
+        if (queueInfoContainer) {
+            queueInfoContainer.innerHTML = `
+                <div class="queue-stat">
+                    <span class="stat-label">People Ahead:</span>
+                    <span class="stat-value">${data.people_ahead || 0}</span>
+                </div>
+                <div class="queue-stat">
+                    <span class="stat-label">Estimated Wait:</span>
+                    <span class="stat-value">${data.estimated_wait_minutes || 5} min</span>
+                </div>
+            `;
+        }
     }
 
     // Event Listeners
@@ -227,7 +256,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Hide the close button in the header for final step
                 document.getElementById('closeConfirmation').style.display = 'none';
                 
+                // Update the display with queue data
                 document.getElementById('generatedNumber').textContent = generatedQueueNumber;
+                
+                // Update people ahead and wait time in the modal
+                updateQueueInfo(queueData);
             } else {
                 alert('Error generating queue number: ' + result.message);
                 // Reset button state

@@ -43,14 +43,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Action buttons
         document.getElementById('exportBtn').addEventListener('click', exportTransactions);
-        document.getElementById('addTransactionBtn').addEventListener('click', openAddTransactionModal);
-        document.getElementById('generateSampleBtn').addEventListener('click', generateSampleData);
-        
-        // Modal controls
-        document.getElementById('transactionForm').addEventListener('submit', handleTransactionSubmit);
-        document.querySelectorAll('.modal-close').forEach(btn => {
-            btn.addEventListener('click', closeModal);
-        });
         
         // Auto-refresh every 30 seconds
         setInterval(refreshData, 30000);
@@ -211,31 +203,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function getActionButtons(transaction) {
-        let buttons = '';
-        
-        switch (transaction.status) {
-            case 'waiting':
-            case 'Awaiting':
-                buttons += `
-                    <button class="btn-action btn-start" onclick="startTransaction('${transaction.transaction_id}')" title="Complete Service">
-                        <i class="fas fa-check"></i>
-                    </button>
-                    <button class="btn-action btn-cancel" onclick="cancelTransaction('${transaction.transaction_id}')" title="Cancel">
-                        <i class="fas fa-times"></i>
-                    </button>
-                `;
-                break;
-            case 'completed':
-            case 'Complete':
-                buttons += `
-                    <button class="btn-action btn-edit" onclick="editOperator('${transaction.transaction_id}')" title="Edit Operator">
-                        <i class="fas fa-user-edit"></i>
-                    </button>
-                `;
-                break;
-        }
-        
-        return buttons;
+        // Only show view button for transaction logs
+        return `
+            <button class="btn-action btn-view" onclick="viewTransaction('${transaction.transaction_id}')" title="View Details">
+                <i class="fas fa-eye"></i>
+            </button>
+        `;
     }
     
     function updateCounterAnalytics(analytics) {
@@ -476,82 +449,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
     
-    function openAddTransactionModal() {
-        document.getElementById('transactionModal').style.display = 'block';
-        document.getElementById('modalTitle').textContent = 'Add New Transaction';
-        document.getElementById('transactionForm').reset();
-        
-        // Generate next queue number
-        generateNextQueueNumber();
-    }
-    
-    function closeModal() {
-        document.getElementById('transactionModal').style.display = 'none';
-    }
-    
-    async function generateNextQueueNumber() {
-        // Simple queue number generation - could be improved with actual counter logic
-        const prefix = String.fromCharCode(65 + (currentTransactions.length % 26)); // A, B, C, etc.
-        const number = (currentTransactions.length + 1).toString().padStart(3, '0');
-        document.getElementById('modalQueueNumber').value = prefix + number;
-    }
-    
-    async function handleTransactionSubmit(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(e.target);
-        
-        try {
-            const response = await fetch('transactions/ajax.php?action=add_awaiting', {
-                method: 'POST',
-                body: formData
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                await Swal.fire('Success', result.message, 'success');
-                closeModal();
-                refreshData();
-            } else {
-                await Swal.fire('Error', result.message, 'error');
-            }
-        } catch (error) {
-            console.error('Error submitting transaction:', error);
-            await Swal.fire('Error', 'Connection error', 'error');
-        }
-    }
-    
-    async function generateSampleData() {
-        try {
-            const result = await Swal.fire({
-                title: 'Generate Sample Data',
-                text: 'This will create sample transactions for demonstration. Continue?',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, Generate',
-                cancelButtonText: 'Cancel'
-            });
-            
-            if (result.isConfirmed) {
-                const response = await fetch('transactions/ajax.php?action=generate_sample_data', {
-                    method: 'POST'
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    await Swal.fire('Success', result.message, 'success');
-                    refreshData();
-                } else {
-                    await Swal.fire('Error', result.message, 'error');
-                }
-            }
-        } catch (error) {
-            console.error('Error generating sample data:', error);
-            await Swal.fire('Error', 'Connection error', 'error');
-        }
-    }
+    // Transaction adding and modal functions removed - this is now a read-only log
     
     async function exportTransactions() {
         try {
@@ -677,12 +575,4 @@ document.addEventListener('DOMContentLoaded', function() {
     function showError(message) {
         Swal.fire('Error', message, 'error');
     }
-    
-    // Close modal when clicking outside
-    window.addEventListener('click', function(e) {
-        const modal = document.getElementById('transactionModal');
-        if (e.target === modal) {
-            closeModal();
-        }
-    });
 });

@@ -75,14 +75,6 @@ include 'components/header.php';
                 <i class="fas fa-download"></i>
                 Export Report
             </button>
-            <button id="addTransactionBtn" class="btn btn-success">
-                <i class="fas fa-plus"></i>
-                Add Transaction
-            </button>
-            <button id="generateSampleBtn" class="btn btn-warning">
-                <i class="fas fa-database"></i>
-                Generate Sample
-            </button>
         </div>
     </div>
 </div>
@@ -106,7 +98,7 @@ include 'components/header.php';
                 <th>Time Served</th>
                 <th>Duration</th>
                 <th>Status</th>
-                <th>Actions</th>
+                <th>View Details</th>
             </tr>
         </thead>
         <tbody id="transactionsTableBody">
@@ -197,61 +189,6 @@ include 'components/header.php';
                 </div>
             </div>
         </div>
-    </div>
-</div>
-
-<!-- Transaction Modal -->
-<div id="transactionModal" class="transaction-modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 class="modal-title" id="modalTitle">
-                <i class="fas fa-plus"></i>
-                Add New Transaction
-            </h3>
-            <button type="button" class="modal-close">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <form id="transactionForm">
-            <div class="modal-body">
-                <input type="hidden" id="modalTransactionId" name="transaction_id">
-                
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="modalQueueNumber" class="form-label">Queue Number</label>
-                        <input type="text" id="modalQueueNumber" name="queue_number" class="form-input" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="modalCounterId" class="form-label">Counter</label>
-                        <select id="modalCounterId" name="counter_id" class="form-input" required>
-                            <option value="">Select Counter</option>
-                            <!-- Options loaded via JavaScript -->
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="modalOperatorId" class="form-label">Operator</label>
-                        <select id="modalOperatorId" name="operator_id" class="form-input">
-                            <option value="">Select Operator</option>
-                            <!-- Options loaded via JavaScript -->
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="modalStatus" class="form-label">Status</label>
-                        <select id="modalStatus" name="status" class="form-input">
-                            <option value="Awaiting">Awaiting</option>
-                            <option value="Complete">Complete</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary modal-close">Cancel</button>
-                <button type="submit" class="btn btn-primary">Save Transaction</button>
-            </div>
-        </form>
     </div>
 </div>
 

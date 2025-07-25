@@ -113,6 +113,9 @@ try {
                                 <span class="number-label">Your Queue Number</span>
                                 <span class="generated-number" id="generatedNumber">A001</span>
                             </div>
+                            <div class="queue-info-display">
+                                <!-- Queue info will be populated by JavaScript -->
+                            </div>
                             <div class="ticket-details">
                                 <p><strong>Service:</strong> <span id="finalServiceName">General Banking</span></p>
                                 <p><strong>Date & Time:</strong> <span id="finalDateTime"></span></p>

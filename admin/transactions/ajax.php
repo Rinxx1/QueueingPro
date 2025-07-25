@@ -47,47 +47,13 @@ switch ($action) {
         echo json_encode(['success' => true, 'data' => $operators]);
         break;
         
+    // Transaction modification endpoints removed - this is now a read-only log
     case 'add_awaiting':
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $queueNumber = $_POST['queue_number'] ?? '';
-            $counterId = $_POST['counter_id'] ?? 0;
-            
-            $result = addAwaitingTransaction($queueNumber, $counterId);
-            echo json_encode($result);
-        }
-        break;
-        
     case 'complete_transaction':
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $awaitingId = $_POST['awaiting_id'] ?? 0;
-            $duration = $_POST['duration'] ?? null;
-            $result = completeTransaction($awaitingId, $duration);
-            echo json_encode($result);
-        }
-        break;
-        
     case 'cancel_transaction':
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $awaitingId = $_POST['awaiting_id'] ?? 0;
-            $result = cancelTransaction($awaitingId);
-            echo json_encode($result);
-        }
-        break;
-        
     case 'generate_sample_data':
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $result = generateSampleTransactions();
-            echo json_encode($result);
-        }
-        break;
-        
     case 'update_operator':
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $transactionId = $_POST['transaction_id'] ?? 0;
-            $operatorId = $_POST['user_id'] ?? $_POST['operator_id'] ?? null; // Support both parameter names
-            $result = updateTransactionOperator($transactionId, $operatorId);
-            echo json_encode($result);
-        }
+        echo json_encode(['success' => false, 'message' => 'Transaction modifications not allowed - this is a read-only log']);
         break;
         
     case 'get_transaction':

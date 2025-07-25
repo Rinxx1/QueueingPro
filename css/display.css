@@ -164,10 +164,28 @@ body {
 .placeholder-content {
     text-align: center;
     padding: 40px;
+    transition: var(--transition);
 }
 
 .placeholder-content i {
     color: var(--accent-color);
+    transition: var(--transition);
+}
+
+/* Clickable placeholder styles */
+.video-placeholder[style*="cursor: pointer"]:hover .placeholder-content {
+    transform: scale(1.05);
+}
+
+.video-placeholder[style*="cursor: pointer"]:hover .placeholder-content i {
+    color: var(--secondary-color);
+}
+
+.video-placeholder[style*="cursor: pointer"]:active .placeholder-content {
+    transform: scale(0.98);
+}
+
+.placeholder-content i {
     margin-bottom: 20px;
 }
 

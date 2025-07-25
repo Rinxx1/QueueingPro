@@ -108,11 +108,11 @@ switch ($action) {
                 $stmt = $pdo->prepare("UPDATE counters SET Counter_CurrentNumber = ? WHERE Counter_ID = ?");
                 $stmt->execute([$nextNumber, $counterId]);
                 
-                // Update the start time for the new customer
+                // Update the start time for the new customer (this is when the new number starts being served)
                 updateCounterStartTime($counterId);
                 
-                // Remove the number from the awaiting queue
-                removeFirstFromAwaitingQueue($counterId);
+                // Remove the specific number from the awaiting queue
+                removeSpecificFromAwaitingQueue($counterId, $nextNumber);
                 
                 echo json_encode([
                     'success' => true, 
@@ -122,6 +122,26 @@ switch ($action) {
                 ]);
             } else {
                 echo json_encode(['success' => false, 'message' => 'No customers in queue']);
+            }
+        } catch(PDOException $e) {
+            echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+        }
+        break;
+
+    case 'initialize_counter':
+        $counterId = $_POST['counter_id'] ?? 0;
+        
+        if (empty($counterId)) {
+            echo json_encode(['success' => false, 'message' => 'Counter ID is required']);
+            break;
+        }
+        
+        try {
+            $result = initializeCounterForDay($counterId);
+            if ($result) {
+                echo json_encode(['success' => true, 'message' => 'Counter initialized for the day']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Failed to initialize counter']);
             }
         } catch(PDOException $e) {
             echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);

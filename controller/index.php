@@ -13,15 +13,14 @@ if (!isLoggedIn() || !isController()) {
 // Get user information
 $userId = $_SESSION['user_id'];
 $username = $_SESSION['username'];
-$counterId = $_SESSION['counter_id'];
 
 // Get user's full name and counter information
 try {
+    // First get user basic info
     $stmt = $pdo->prepare("
-        SELECT u.Firstname, u.Lastname, u.Username, c.Counter_Name, c.Counter_CurrentNumber, c.Counter_Status, c.Start_Time
-        FROM users u
-        LEFT JOIN counters c ON u.Counter_ID = c.Counter_ID
-        WHERE u.User_ID = ?
+        SELECT Firstname, Lastname, Username
+        FROM users
+        WHERE User_ID = ?
     ");
     $stmt->execute([$userId]);
     $userInfo = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -32,10 +31,29 @@ try {
     }
     
     $operatorName = $userInfo['Firstname'] . ' ' . $userInfo['Lastname'];
-    $counterName = $userInfo['Counter_Name'] ?? 'Not Assigned';
-    $currentNumber = $userInfo['Counter_CurrentNumber'] ?? 'A001';
-    $counterStatus = $userInfo['Counter_Status'] ?? 'Active';
-    $startTime = $userInfo['Start_Time'] ?? null;
+    
+    // Get counter information where this user is assigned
+    $stmt = $pdo->prepare("
+        SELECT Counter_ID, Counter_Name, Counter_CurrentNumber, Counter_Status, Start_Time
+        FROM counters
+        WHERE User_ID = ?
+    ");
+    $stmt->execute([$userId]);
+    $counterInfo = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($counterInfo) {
+        $counterId = $counterInfo['Counter_ID'];
+        $counterName = $counterInfo['Counter_Name'];
+        $currentNumber = $counterInfo['Counter_CurrentNumber'] ?? 'A001';
+        $counterStatus = $counterInfo['Counter_Status'] ?? 'Active';
+        $startTime = $counterInfo['Start_Time'] ?? null;
+    } else {
+        $counterId = null;
+        $counterName = 'Not Assigned';
+        $currentNumber = 'A001';
+        $counterStatus = 'Inactive';
+        $startTime = null;
+    }
     
     // Get awaiting queue for this counter
     $awaitingQueue = [];

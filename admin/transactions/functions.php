@@ -1,6 +1,17 @@
 <?php
 require_once '../../connections/database.php';
 
+/**
+ * Transaction Functions
+ * 
+ * This file contains both read-only functions for viewing transaction data
+ * and modification functions for adding/updating transactions.
+ * 
+ * Note: The transactions page is now a read-only log. Modification functions
+ * are preserved for potential use in other parts of the system but are disabled
+ * in the transactions page AJAX endpoints.
+ */
+
 // Get all transactions from the new transactions table and views
 function getAllTransactions($filters = []) {
     global $pdo;

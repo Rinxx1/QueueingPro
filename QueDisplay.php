@@ -147,11 +147,16 @@ try {
             <section class="video-section">
                 <div class="video-player-container">
                     <div class="video-content">
-                        <video id="displayVideo" autoplay <?php echo $globalMuted ? 'muted' : ''; ?> loop preload="auto" 
+                        <video id="displayVideo" autoplay muted loop preload="auto" playsinline
                                data-global-muted="<?php echo $globalMuted ? '1' : '0'; ?>" 
-                               data-global-volume="<?php echo $globalVolume; ?>">
+                               data-global-volume="<?php echo $globalVolume; ?>"
+                               data-debug-active-video="<?php echo $activeVideo ? 'true' : 'false'; ?>"
+                               data-debug-video-title="<?php echo $activeVideo ? htmlspecialchars($activeVideo['Video_Title']) : 'none'; ?>">
                             <?php if ($activeVideo && !empty($activeVideo['Video_Location'])): ?>
                                 <source src="<?php echo htmlspecialchars($activeVideo['Video_Location']); ?>" type="video/mp4">
+                                <!-- Debug comment: Active video loaded - <?php echo htmlspecialchars($activeVideo['Video_Title']); ?> -->
+                            <?php else: ?>
+                                <!-- Debug comment: No active video found in database -->
                             <?php endif; ?>
                             <!-- Fallback videos -->
                             <source src="uploads/videos/info-video.mp4" type="video/mp4">
