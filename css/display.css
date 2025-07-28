@@ -540,3 +540,26 @@ body {
     background: var(--secondary-color);
     border: 2px solid var(--border-color);
 }
+
+/* Voice Indicator */
+.voice-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--success-color);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    animation: pulse 2s infinite;
+    margin-top: 0.5rem;
+}
+
+.voice-indicator i {
+    font-size: 1rem;
+}
+
+.voice-indicator.hidden {
+    display: none;
+}

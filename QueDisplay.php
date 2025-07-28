@@ -20,6 +20,39 @@ try {
     $counters = [];
 }
 
+// Get counter statistics for today based on Date_Completed
+$counterStats = [];
+foreach ($counters as $counter) {
+    $counterId = $counter['Counter_ID'];
+    
+    try {
+        // Get served today count and average time for today's date only
+        $stmt = $pdo->prepare("
+            SELECT 
+                COUNT(*) as served_today,
+                AVG(TIME_TO_SEC(Duration)) as avg_seconds
+            FROM complete 
+            WHERE Counter_ID = ? 
+            AND Date_Completed = CURDATE()
+        ");
+        $stmt->execute([$counterId]);
+        $stats = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        $servedToday = $stats['served_today'] ?? 0;
+        $avgMinutes = $stats['avg_seconds'] ? round($stats['avg_seconds'] / 60, 1) : 0;
+        
+        $counterStats[$counterId] = [
+            'served_today' => $servedToday,
+            'avg_time' => $avgMinutes
+        ];
+    } catch(PDOException $e) {
+        $counterStats[$counterId] = [
+            'served_today' => 0,
+            'avg_time' => 0
+        ];
+    }
+}
+
 // Get active video from database
 $activeVideo = null;
 try {
@@ -31,11 +64,12 @@ try {
     $activeVideo = null;
 }
 
-// Get global mute status and volume
+// Get global mute status, volume, and voice announcements setting
 $globalMuted = false;
 $globalVolume = 50; // Default volume 50%
+$voiceAnnouncements = true; // Default to enabled
 try {
-    $stmt = $pdo->prepare("SELECT setting_key, setting_value, Volume FROM settings WHERE setting_key IN ('global_video_muted', 'global_video_volume')");
+    $stmt = $pdo->prepare("SELECT setting_key, setting_value, Volume FROM settings WHERE setting_key IN ('global_video_muted', 'global_video_volume', 'voice_announcements_enabled')");
     $stmt->execute();
     $settings = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
@@ -44,12 +78,24 @@ try {
             $globalMuted = (bool)$setting['setting_value'];
         } elseif ($setting['setting_key'] === 'global_video_volume') {
             $globalVolume = (int)$setting['Volume'];
+        } elseif ($setting['setting_key'] === 'voice_announcements_enabled') {
+            $voiceAnnouncements = (bool)$setting['setting_value'];
         }
+    }
+    
+    // Insert default voice announcements setting if not exists
+    if (!array_filter($settings, fn($s) => $s['setting_key'] === 'voice_announcements_enabled')) {
+        $stmt = $pdo->prepare("
+            INSERT INTO settings (setting_key, setting_value) 
+            VALUES ('voice_announcements_enabled', '1')
+        ");
+        $stmt->execute();
     }
 } catch(PDOException $e) {
     // Handle error silently, use defaults
     $globalMuted = false;
     $globalVolume = 50;
+    $voiceAnnouncements = true;
 }
 ?>
 <!DOCTYPE html>
@@ -70,6 +116,7 @@ try {
             for ($i = 0; $i < min(3, count($counters)); $i++): 
                 $counter = $counters[$i];
                 $sectionClass = 'counter-' . ($i + 1);
+                $stats = $counterStats[$counter['Counter_ID']] ?? ['served_today' => 0, 'avg_time' => 0];
             ?>
                 <section class="<?php echo $sectionClass; ?>">
                     <div class="counter-card offline">
@@ -91,11 +138,11 @@ try {
                             <div class="counter-stats">
                                 <div class="stat">
                                     <i class="fas fa-users"></i>
-                                    <span>Served Today: --</span>
+                                    <span>Served Today: <?php echo $stats['served_today']; ?></span>
                                 </div>
                                 <div class="stat">
                                     <i class="fas fa-clock"></i>
-                                    <span>Avg Time: -- min</span>
+                                    <span>Avg Time: <?php echo $stats['avg_time']; ?> min</span>
                                 </div>
                             </div>
                         </div>
@@ -110,6 +157,7 @@ try {
                 <section class="right-counters">
                     <?php for ($i = 3; $i < count($counters); $i++): 
                         $counter = $counters[$i];
+                        $stats = $counterStats[$counter['Counter_ID']] ?? ['served_today' => 0, 'avg_time' => 0];
                     ?>
                         <div class="counter-card offline">
                             <div class="counter-header">
@@ -130,11 +178,11 @@ try {
                                 <div class="counter-stats">
                                     <div class="stat">
                                         <i class="fas fa-users"></i>
-                                        <span>Served Today: --</span>
+                                        <span>Served Today: <?php echo $stats['served_today']; ?></span>
                                     </div>
                                     <div class="stat">
                                         <i class="fas fa-clock"></i>
-                                        <span>Avg Time: -- min</span>
+                                        <span>Avg Time: <?php echo $stats['avg_time']; ?> min</span>
                                     </div>
                                 </div>
                             </div>
@@ -150,6 +198,7 @@ try {
                         <video id="displayVideo" autoplay muted loop preload="auto" playsinline
                                data-global-muted="<?php echo $globalMuted ? '1' : '0'; ?>" 
                                data-global-volume="<?php echo $globalVolume; ?>"
+                               data-voice-announcements="<?php echo $voiceAnnouncements ? '1' : '0'; ?>"
                                data-debug-active-video="<?php echo $activeVideo ? 'true' : 'false'; ?>"
                                data-debug-video-title="<?php echo $activeVideo ? htmlspecialchars($activeVideo['Video_Title']) : 'none'; ?>">
                             <?php if ($activeVideo && !empty($activeVideo['Video_Location'])): ?>
@@ -218,6 +267,10 @@ try {
         <section class="datetime-section">
             <div class="current-time" id="currentTime"></div>
             <div class="current-date" id="currentDate"></div>
+            <div class="voice-indicator" id="voiceIndicator" style="display: none;">
+                <i class="fas fa-volume-up"></i>
+                <span>Voice Active</span>
+            </div>
         </section>
     </main>
 

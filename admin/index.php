@@ -81,6 +81,14 @@ $hourlyData = getHourlyPerformance();
                 <i class="fas fa-gamepad"></i>
                 Controller Panel
             </a>
+            <button id="toggleVoiceAnnouncements" class="btn btn-info">
+                <i class="fas fa-volume-up"></i>
+                <span id="voiceStatus">Voice: ON</span>
+            </button>
+            <button id="testVoiceAnnouncement" class="btn btn-warning">
+                <i class="fas fa-play"></i>
+                Test Voice
+            </button>
         </div>
     </div>
 
@@ -239,6 +247,117 @@ document.addEventListener('DOMContentLoaded', function() {
     if (pageHeader) {
         const lastUpdate = new Date().toLocaleTimeString();
         pageHeader.innerHTML += ` <small style="color: var(--medium-gray);">(Last updated: ${lastUpdate})</small>`;
+    }
+    
+    // Voice announcements toggle functionality
+    const toggleButton = document.getElementById('toggleVoiceAnnouncements');
+    const voiceStatus = document.getElementById('voiceStatus');
+    
+    if (toggleButton && voiceStatus) {
+        // Get current voice announcements status
+        fetch('../display_data.php')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.hasOwnProperty('voice_announcements')) {
+                    updateVoiceButton(data.voice_announcements);
+                }
+            })
+            .catch(error => console.error('Error fetching voice status:', error));
+        
+        toggleButton.addEventListener('click', function() {
+            const currentStatus = voiceStatus.textContent.includes('ON');
+            const newStatus = !currentStatus;
+            
+            // Update the setting via AJAX
+            fetch('voice_announcements_ajax.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'action=toggle&enabled=' + (newStatus ? '1' : '0')
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateVoiceButton(newStatus);
+                    // Show success message
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            title: 'Success!',
+                            text: `Voice announcements ${newStatus ? 'enabled' : 'disabled'}`,
+                            icon: 'success',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    }
+                } else {
+                    console.error('Error updating voice announcements:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error updating voice announcements:', error);
+            });
+        });
+        
+        function updateVoiceButton(enabled) {
+            if (enabled) {
+                voiceStatus.textContent = 'Voice: ON';
+                toggleButton.className = 'btn btn-info';
+                toggleButton.querySelector('i').className = 'fas fa-volume-up';
+            } else {
+                voiceStatus.textContent = 'Voice: OFF';
+                toggleButton.className = 'btn btn-secondary';
+                toggleButton.querySelector('i').className = 'fas fa-volume-mute';
+            }
+        }
+        
+        // Test voice announcement functionality
+        const testButton = document.getElementById('testVoiceAnnouncement');
+        if (testButton) {
+            testButton.addEventListener('click', function() {
+                if (window.speechSynthesis) {
+                    const utterance = new SpeechSynthesisUtterance('Number 123');
+                    utterance.rate = 0.6;
+                    utterance.pitch = 1.0;
+                    utterance.volume = 1.0;
+                    
+                    // Try to use a clear voice
+                    const voices = window.speechSynthesis.getVoices();
+                    const preferredVoice = voices.find(voice => 
+                        voice.lang.includes('en') && 
+                        (voice.name.includes('Google') || voice.name.includes('Microsoft') || voice.name.includes('Samantha'))
+                    );
+                    
+                    if (preferredVoice) {
+                        utterance.voice = preferredVoice;
+                    }
+                    
+                    window.speechSynthesis.speak(utterance);
+                    
+                    // Show success message
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            title: 'Test Announcement',
+                            text: 'Voice test initiated. You should hear "Number 123".',
+                            icon: 'info',
+                            timer: 3000,
+                            showConfirmButton: false
+                        });
+                    }
+                } else {
+                    // Show error message
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            title: 'Speech Synthesis Not Supported',
+                            text: 'Your browser does not support speech synthesis.',
+                            icon: 'error',
+                            timer: 3000,
+                            showConfirmButton: false
+                        });
+                    }
+                }
+            });
+        }
     }
 });
 </script>

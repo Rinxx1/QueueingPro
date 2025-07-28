@@ -86,11 +86,12 @@ try {
         error_log('Error fetching video: ' . $e->getMessage());
     }
     
-    // Get global mute status and volume
+    // Get global mute status, volume, and voice announcements setting
     $globalMuted = false;
     $globalVolume = 50;
+    $voiceAnnouncements = true; // Default to enabled
     try {
-        $stmt = $pdo->prepare("SELECT setting_key, setting_value, Volume FROM settings WHERE setting_key IN ('global_video_muted', 'global_video_volume')");
+        $stmt = $pdo->prepare("SELECT setting_key, setting_value, Volume FROM settings WHERE setting_key IN ('global_video_muted', 'global_video_volume', 'voice_announcements_enabled')");
         $stmt->execute();
         $settings = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
@@ -99,13 +100,25 @@ try {
                 $globalMuted = (bool)$setting['setting_value'];
             } elseif ($setting['setting_key'] === 'global_video_volume') {
                 $globalVolume = (int)$setting['Volume'];
+            } elseif ($setting['setting_key'] === 'voice_announcements_enabled') {
+                $voiceAnnouncements = (bool)$setting['setting_value'];
             }
+        }
+        
+        // Insert default voice announcements setting if not exists
+        if (!array_filter($settings, fn($s) => $s['setting_key'] === 'voice_announcements_enabled')) {
+            $stmt = $pdo->prepare("
+                INSERT INTO settings (setting_key, setting_value) 
+                VALUES ('voice_announcements_enabled', '1')
+            ");
+            $stmt->execute();
         }
     } catch(PDOException $e) {
         // Handle error silently, use defaults
         error_log('Error fetching audio settings: ' . $e->getMessage());
         $globalMuted = false;
         $globalVolume = 50;
+        $voiceAnnouncements = true;
     }
     
     echo json_encode([
@@ -114,6 +127,7 @@ try {
         'video' => $activeVideo,
         'global_muted' => $globalMuted,
         'global_volume' => $globalVolume,
+        'voice_announcements' => $voiceAnnouncements,
         'timestamp' => date('Y-m-d H:i:s')
     ]);
     

@@ -10,6 +10,10 @@ class QueueDisplay {
         this.videoLoadingTimeout = null; // Timeout for video loading
         this.currentVideoId = null; // Track current video ID
         this.currentVideoLocation = null; // Track current video location
+        this.voiceAnnouncementsEnabled = true; // Voice announcements setting
+        this.announcementQueue = []; // Queue for voice announcements
+        this.isSpeaking = false; // Track if currently speaking
+        this.previousNumbers = {}; // Track previous numbers for each counter
         
         this.init();
     }
@@ -23,6 +27,7 @@ class QueueDisplay {
         this.initVideoPlayer();
         this.startAutoplayMonitoring();
         this.setupInteractionDetection();
+        this.initSpeechSynthesis();
     }
     
     setupAutoScaling() {
@@ -165,10 +170,15 @@ class QueueDisplay {
                     this.handleGlobalMuteUpdate(result.global_muted);
                 }
                 
-                // Handle global volume
-                if (result.hasOwnProperty('global_volume')) {
-                    this.handleGlobalVolumeUpdate(result.global_volume);
-                }
+                        // Handle global volume
+        if (result.hasOwnProperty('global_volume')) {
+            this.handleGlobalVolumeUpdate(result.global_volume);
+        }
+        
+        // Handle voice announcements setting
+        if (result.hasOwnProperty('voice_announcements')) {
+            this.handleVoiceAnnouncementsUpdate(result.voice_announcements);
+        }
             } else {
                 console.error('Error fetching queue data:', result.message);
                 this.handleDataError();
@@ -209,6 +219,14 @@ class QueueDisplay {
         // Clear any existing dynamic sections first
         this.clearDynamicCounters();
         
+        // Initialize previous numbers if this is the first update
+        if (Object.keys(this.previousNumbers).length === 0) {
+            counters.forEach(counter => {
+                this.previousNumbers[counter.id] = counter.current_number || '--';
+            });
+            console.log('Initialized previous numbers:', this.previousNumbers);
+        }
+        
         // Update each counter display
         counters.forEach((counter, index) => {
             this.updateCounterCard(counter, index);
@@ -231,6 +249,10 @@ class QueueDisplay {
         
         const counterCard = allCounterCards[index];
         if (!counterCard) return;
+        
+        // Get current number from the counter data
+        const newNumber = counter.current_number || '--';
+        const previousNumber = this.previousNumbers[counter.id] || '--';
         
         // Update status and classes
         const isActive = counter.status && counter.status.toLowerCase() === 'active';
@@ -261,7 +283,23 @@ class QueueDisplay {
         // Update current serving number
         const queueNumber = counterCard.querySelector('.queue-number');
         if (queueNumber) {
-            queueNumber.textContent = counter.current_number || '--';
+            queueNumber.textContent = newNumber;
+        }
+        
+        // Check for number changes and handle announcements
+        if (newNumber !== previousNumber && newNumber !== '--' && isActive) {
+            console.log('Number change detected:', { 
+                counterId: counter.id, 
+                counterName: counter.name,
+                previousNumber, 
+                newNumber, 
+                isActive, 
+                voiceEnabled: this.voiceAnnouncementsEnabled 
+            });
+            
+            // Announce new number immediately
+            console.log('Triggering announcement for counter:', counter.id);
+            this.announceNewNumber(counter.id, counter.name, newNumber);
         }
         
         // Update served today
@@ -276,6 +314,76 @@ class QueueDisplay {
             const avgTime = counter.avg_duration > 0 ? `${counter.avg_duration} min` : '-- min';
             avgTimeStat.textContent = `Avg Time: ${avgTime}`;
         }
+        
+        // Store the new number as previous for next comparison
+        this.previousNumbers[counter.id] = newNumber;
+    }
+    
+    // Announce new number using speech synthesis
+    announceNewNumber(counterId, counterName, number) {
+        console.log('announceNewNumber called:', { counterId, counterName, number, enabled: this.voiceAnnouncementsEnabled });
+        
+        // Check if voice announcements are enabled
+        if (!this.voiceAnnouncementsEnabled) {
+            console.log('Voice announcements disabled');
+            return;
+        }
+        
+        // Check if speech synthesis is supported
+        if (!window.speechSynthesis) {
+            console.log('Speech synthesis not supported');
+            return;
+        }
+        
+        // Ensure speech synthesis is not paused
+        if (window.speechSynthesis.paused) {
+            console.log('Speech synthesis was paused, resuming...');
+            window.speechSynthesis.resume();
+        }
+        
+        // Create the announcement text - simple format
+        const announcement = `Number ${number}`;
+        
+        // Create speech utterance
+        const utterance = new SpeechSynthesisUtterance(announcement);
+        
+        // Configure speech settings - much slower for clarity
+        utterance.rate = 0.6; // Much slower for better clarity
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+        
+        // Try to use a clear voice
+        const voices = window.speechSynthesis.getVoices();
+        const preferredVoice = voices.find(voice => 
+            voice.lang.includes('en') && 
+            (voice.name.includes('Google') || voice.name.includes('Microsoft') || voice.name.includes('Samantha'))
+        );
+        
+        if (preferredVoice) {
+            utterance.voice = preferredVoice;
+        }
+        
+        // Add to announcement queue instead of canceling
+        this.queueAnnouncement(utterance);
+        
+        // Add error handling for speech synthesis
+        utterance.onerror = (event) => {
+            console.error('Speech synthesis error:', event.error);
+            this.removeFromQueue(utterance);
+        };
+        
+        utterance.onend = () => {
+            console.log('Speech announcement completed');
+            this.removeFromQueue(utterance);
+        };
+        
+        // Add visual highlight to the counter
+        this.highlightCounter(counterId);
+        
+        // Show brief visual indicator that announcement is happening
+        this.showAnnouncementIndicator();
+        
+        console.log('Announcing new number:', announcement);
     }
     
     // Handle video updates from server
@@ -538,9 +646,10 @@ class QueueDisplay {
             console.log('No initial video source found');
         }
         
-        // Initialize global mute status and volume from data attributes
+        // Initialize global mute status, volume, and voice announcements from data attributes
         const globalMuted = video.getAttribute('data-global-muted') === '1';
         const globalVolume = parseInt(video.getAttribute('data-global-volume')) || 50;
+        const voiceAnnouncements = video.getAttribute('data-voice-announcements') === '1';
         
         if (globalMuted) {
             video.muted = true;
@@ -550,6 +659,20 @@ class QueueDisplay {
         // Set initial volume (convert percentage to decimal)
         video.volume = globalVolume / 100;
         console.log('Video initialized with global volume:', globalVolume + '%');
+        
+        // Initialize voice announcements setting
+        this.voiceAnnouncementsEnabled = voiceAnnouncements;
+        console.log('Voice announcements initialized:', voiceAnnouncements ? 'enabled' : 'disabled');
+        
+        // Update voice indicator visibility
+        const voiceIndicator = document.getElementById('voiceIndicator');
+        if (voiceIndicator) {
+            if (voiceAnnouncements) {
+                voiceIndicator.style.display = 'flex';
+            } else {
+                voiceIndicator.style.display = 'none';
+            }
+        }
 
         // Ensure initial video autoplays if there's a source
         if (currentSource && currentSource.src) {
@@ -1143,6 +1266,22 @@ class QueueDisplay {
             console.log('Global volume updated to:', globalVolume + '%');
         }
     }
+    
+    // Handle voice announcements setting updates from admin
+    handleVoiceAnnouncementsUpdate(voiceAnnouncements) {
+        this.voiceAnnouncementsEnabled = voiceAnnouncements;
+        console.log('Voice announcements setting updated:', voiceAnnouncements ? 'enabled' : 'disabled');
+        
+        // Update voice indicator visibility
+        const voiceIndicator = document.getElementById('voiceIndicator');
+        if (voiceIndicator) {
+            if (voiceAnnouncements) {
+                voiceIndicator.style.display = 'flex';
+            } else {
+                voiceIndicator.style.display = 'none';
+            }
+        }
+    }
 
     // Continuous autoplay monitoring - ensures video keeps playing when Video_Status = 1
     startAutoplayMonitoring() {
@@ -1189,11 +1328,150 @@ class QueueDisplay {
             document.addEventListener(event, enableAutoplay, { once: true, passive: true });
         });
     }
+    
+    // Initialize speech synthesis
+    initSpeechSynthesis() {
+        if (!window.speechSynthesis) {
+            console.log('Speech synthesis not supported in this browser');
+            return;
+        }
+        
+        // Load voices when they become available
+        const loadVoices = () => {
+            const voices = window.speechSynthesis.getVoices();
+            console.log('Available voices:', voices.length);
+            
+            // Log available voices for debugging
+            voices.forEach(voice => {
+                console.log(`Voice: ${voice.name} (${voice.lang})`);
+            });
+        };
+        
+        // Load voices immediately if available
+        loadVoices();
+        
+        // Also load when voices change
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+        
+        console.log('Speech synthesis initialized');
+    }
+    
+    // Show brief visual indicator when announcement is happening
+    showAnnouncementIndicator() {
+        const voiceIndicator = document.getElementById('voiceIndicator');
+        if (voiceIndicator) {
+            // Add a brief flash effect
+            voiceIndicator.style.animation = 'pulse 0.5s ease-in-out';
+            voiceIndicator.style.transform = 'scale(1.1)';
+            
+            setTimeout(() => {
+                voiceIndicator.style.animation = 'pulse 2s infinite';
+                voiceIndicator.style.transform = 'scale(1)';
+            }, 500);
+        }
+    }
+    
+    // Queue management for voice announcements
+    queueAnnouncement(utterance) {
+        // Add to queue
+        this.announcementQueue.push(utterance);
+        console.log(`Announcement queued. Queue length: ${this.announcementQueue.length}`);
+        console.log('Queue contents:', this.announcementQueue.map(u => u.text));
+        
+        // Start speaking if not already speaking
+        if (!this.isSpeaking) {
+            console.log('Starting to process queue...');
+            this.processQueue();
+        } else {
+            console.log('Already speaking, announcement added to queue');
+        }
+    }
+    
+    // Remove utterance from queue
+    removeFromQueue(utterance) {
+        const index = this.announcementQueue.indexOf(utterance);
+        if (index > -1) {
+            this.announcementQueue.splice(index, 1);
+            console.log(`Announcement removed from queue. Queue length: ${this.announcementQueue.length}`);
+        }
+    }
+    
+    // Process the announcement queue
+    processQueue() {
+        if (this.announcementQueue.length === 0) {
+            this.isSpeaking = false;
+            console.log('Announcement queue empty');
+            return;
+        }
+        
+        this.isSpeaking = true;
+        const utterance = this.announcementQueue.shift();
+        
+        console.log(`Processing announcement: "${utterance.text}". Queue length: ${this.announcementQueue.length}`);
+        
+        // Speak the announcement
+        window.speechSynthesis.speak(utterance);
+        
+        // Set up next announcement after current one ends
+        utterance.onend = () => {
+            console.log('Announcement completed, processing next in queue');
+            this.processQueue();
+        };
+        
+        utterance.onerror = (event) => {
+            console.error('Speech synthesis error:', event.error);
+            this.processQueue(); // Continue with next announcement
+        };
+    }
+    
+    // Test method for debugging voice announcements
+    testVoiceAnnouncement() {
+        console.log('Testing voice announcement...');
+        console.log('Voice enabled:', this.voiceAnnouncementsEnabled);
+        console.log('Speech synthesis available:', !!window.speechSynthesis);
+        
+        if (window.speechSynthesis) {
+            const voices = window.speechSynthesis.getVoices();
+            console.log('Available voices:', voices.length);
+            voices.forEach(voice => console.log(`- ${voice.name} (${voice.lang})`));
+            
+            const utterance = new SpeechSynthesisUtterance('Test number 123');
+            utterance.rate = 0.6;
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+            
+            window.speechSynthesis.speak(utterance);
+            console.log('Test announcement sent');
+        }
+    }
+    
+
 }
 
 // Initialize the display system when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    new QueueDisplay();
+    window.queueDisplay = new QueueDisplay();
+    
+    // Make test method globally accessible
+    window.testVoice = () => {
+        if (window.queueDisplay) {
+            window.queueDisplay.testVoiceAnnouncement();
+        } else {
+            console.log('QueueDisplay not initialized');
+        }
+    };
+    
+    // Make force refresh method globally accessible
+    window.forceVoiceRefresh = () => {
+        if (window.queueDisplay) {
+            window.queueDisplay.previousNumbers = {};
+            console.log('Voice system refreshed - previous numbers cleared');
+        } else {
+            console.log('QueueDisplay not initialized');
+        }
+    };
+    
+
 });
 
 // Handle page visibility changes to pause/resume updates
