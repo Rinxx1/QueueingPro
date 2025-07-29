@@ -1,3 +1,21 @@
+<?php
+require_once 'connections/database.php';
+
+// Get all active counters from the database
+$counters = [];
+try {
+    $stmt = $pdo->prepare("
+        SELECT Counter_ID, Counter_Name, Counter_Description, Counter_Status 
+        FROM counters 
+        WHERE Counter_Status = 'Active'
+        ORDER BY Counter_Name ASC
+    ");
+    $stmt->execute();
+    $counters = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch(PDOException $e) {
+    $counters = [];
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -19,95 +37,31 @@
                     <p>Touch a service below to get your queue number</p>
                 </div>
                 <div class="transaction-grid">
-                    <!-- General Banking -->
-                    <div class="transaction-card" data-category="general">
-                        <div class="card-icon">
-                            <i class="fas fa-university"></i>
-                        </div>
-                        <div class="card-content">
-                            <h4>General Banking</h4>
-                            <p>Account inquiries, statements, general assistance</p>
-                            <div class="estimated-time">
-                                <i class="fas fa-clock"></i>
-                                <span>5-10 min</span>
+                    <?php if (empty($counters)): ?>
+                        <div class="no-counters">
+                            <div class="no-counters-icon">
+                                <i class="fas fa-exclamation-circle"></i>
                             </div>
+                            <h3>No Active Counters</h3>
+                            <p>All service counters are currently offline. Please try again later.</p>
                         </div>
-                    </div>
-
-                    <!-- Deposits & Withdrawals -->
-                    <div class="transaction-card" data-category="deposit">
-                        <div class="card-icon">
-                            <i class="fas fa-money-bill-wave"></i>
-                        </div>
-                        <div class="card-content">
-                            <h4>Deposits & Withdrawals</h4>
-                            <p>Cash deposits, withdrawals, money transfers</p>
-                            <div class="estimated-time">
-                                <i class="fas fa-clock"></i>
-                                <span>3-7 min</span>
+                    <?php else: ?>
+                        <?php foreach ($counters as $counter): ?>
+                            <div class="transaction-card" data-category="counter" data-counter-id="<?php echo $counter['Counter_ID']; ?>">
+                                <div class="card-icon">
+                                    <i class="fas fa-desktop"></i>
+                                </div>
+                                <div class="card-content">
+                                    <h4><?php echo htmlspecialchars($counter['Counter_Name']); ?></h4>
+                                    <p><?php echo htmlspecialchars($counter['Counter_Description'] ?: 'General service counter'); ?></p>
+                                    <div class="estimated-time">
+                                        <i class="fas fa-clock"></i>
+                                        <span>5-10 min</span>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Loans & Credit -->
-                    <div class="transaction-card" data-category="loans">
-                        <div class="card-icon">
-                            <i class="fas fa-handshake"></i>
-                        </div>
-                        <div class="card-content">
-                            <h4>Loans & Credit</h4>
-                            <p>Loan applications, credit cards, mortgage</p>
-                            <div class="estimated-time">
-                                <i class="fas fa-clock"></i>
-                                <span>15-25 min</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Account Services -->
-                    <div class="transaction-card" data-category="account">
-                        <div class="card-icon">
-                            <i class="fas fa-user-cog"></i>
-                        </div>
-                        <div class="card-content">
-                            <h4>Account Services</h4>
-                            <p>Account opening, closures, modifications</p>
-                            <div class="estimated-time">
-                                <i class="fas fa-clock"></i>
-                                <span>10-20 min</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Business Banking -->
-                    <div class="transaction-card" data-category="business">
-                        <div class="card-icon">
-                            <i class="fas fa-briefcase"></i>
-                        </div>
-                        <div class="card-content">
-                            <h4>Business Banking</h4>
-                            <p>Business accounts, merchant services</p>
-                            <div class="estimated-time">
-                                <i class="fas fa-clock"></i>
-                                <span>12-20 min</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Customer Support -->
-                    <div class="transaction-card" data-category="support">
-                        <div class="card-icon">
-                            <i class="fas fa-headset"></i>
-                        </div>
-                        <div class="card-content">
-                            <h4>Customer Support</h4>
-                            <p>Complaints, feedback, technical support</p>
-                            <div class="estimated-time">
-                                <i class="fas fa-clock"></i>
-                                <span>8-15 min</span>
-                            </div>
-                        </div>
-                    </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
             </section>
         </div>
@@ -159,12 +113,15 @@
                                 <span class="number-label">Your Queue Number</span>
                                 <span class="generated-number" id="generatedNumber">A001</span>
                             </div>
+                            <div class="queue-info-display">
+                                <!-- Queue info will be populated by JavaScript -->
+                            </div>
                             <div class="ticket-details">
                                 <p><strong>Service:</strong> <span id="finalServiceName">General Banking</span></p>
                                 <p><strong>Date & Time:</strong> <span id="finalDateTime"></span></p>
                             </div>
                             <div class="final-message">
-                                <p><strong>Please print your ticket and wait for your number to be called.</strong></p>
+                                <p><strong>Please click proceed to finish the process.</strong></p>
                             </div>
                         </div>
                     </div>
@@ -185,13 +142,13 @@
                 
                 <!-- Step 2 Actions -->
                 <div id="finalActions" style="display: none;">
-                    <button class="btn-print-final" id="printQueueNumber">
+                    <button class="btn-done" id="printQueueNumber">
                         <i class="fas fa-print"></i>
-                        Print Queue Number
+                        Proceed
                     </button>
-                    <button class="btn-done" id="finishProcess">
+                 <button class="btn-exit" id="exit">
                         <i class="fas fa-check-circle"></i>
-                        Done
+                       Close
                     </button>
                 </div>
             </div>
@@ -259,6 +216,7 @@
         </div>
     </div>
 
-    <script src="js/script_new.js"></script>
+    <script src="js/counters.js"></script>
+
 </body>
 </html>

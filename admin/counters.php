@@ -3,6 +3,7 @@ $pageTitle = "Counters Management - QueueingPro";
 $currentPage = "counters";
 include 'components/header.php';
 ?>
+<link rel="stylesheet" href="counters/counters.css">
 
 <!-- Page Header -->
 <div class="page-header">
@@ -15,35 +16,50 @@ include 'components/header.php';
 
 <!-- Counter Statistics -->
 <div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-value">6</div>
+    <div class="stat-card" data-stat="total">
+        <div class="stat-value">0</div>
         <div class="stat-label">Total Counters</div>
     </div>
-    <div class="stat-card">
-        <div class="stat-value">5</div>
+    <div class="stat-card" data-stat="active">
+        <div class="stat-value">0</div>
         <div class="stat-label">Active Counters</div>
     </div>
-    <div class="stat-card">
-        <div class="stat-value">1</div>
+    <div class="stat-card" data-stat="break">
+        <div class="stat-value">0</div>
         <div class="stat-label">On Break</div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" data-stat="offline">
         <div class="stat-value">0</div>
         <div class="stat-label">Offline</div>
     </div>
 </div>
 
-<!-- Actions Bar -->
+<!-- Counter Management Actions -->
 <div class="content-card" style="margin-bottom: 2rem;">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h3 style="margin: 0; color: var(--primary-color);">
-            <i class="fas fa-list"></i>
-            Counter Overview
-        </h3>
-        <button class="btn btn-primary">
-            <i class="fas fa-plus"></i>
-            Add New Counter
-        </button>
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+            <h3 style="margin: 0; color: var(--primary-color);">
+                <i class="fas fa-search"></i>
+                Counter Search & Filter
+            </h3>
+            <input type="text" id="searchInput" placeholder="Search counters..." style="padding: 0.6rem 1rem; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit; min-width: 200px;">
+            <select id="statusFilter" style="padding: 0.6rem 1rem; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit;">
+                <option value="">All Status</option>
+                <option value="Active">Active</option>
+                <option value="Break">On Break</option>
+                <option value="Offline">Offline</option>
+            </select>
+        </div>
+        <div style="display: flex; gap: 1rem;">
+            <button id="resetQueueBtn" class="btn btn-warning">
+                <i class="fas fa-redo"></i>
+                Reset Queue Numbers
+            </button>
+            <button id="addCounterBtn" class="btn btn-primary">
+                <i class="fas fa-plus"></i>
+                Add New Counter
+            </button>
+        </div>
     </div>
 </div>
 
@@ -54,201 +70,102 @@ include 'components/header.php';
             <tr>
                 <th>Counter ID</th>
                 <th>Counter Name</th>
-                <th>Service Type</th>
+                <th>Description</th>
+                <th>Current Number</th>
                 <th>Operator</th>
                 <th>Status</th>
-                <th>Current Number</th>
-                <th>Queue Length</th>
                 <th>Actions</th>
             </tr>
         </thead>
-        <tbody>
-            <tr>
-                <td>#001</td>
-                <td>Counter 1</td>
-                <td>General Inquiry</td>
-                <td>John Doe</td>
-                <td><span class="status-badge status-active">Active</span></td>
-                <td>A025</td>
-                <td>3 customers</td>
-                <td>
-                    <button class="btn btn-warning" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
-                        <i class="fas fa-edit"></i>
-                        Edit
-                    </button>
-                    <button class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; margin-left: 0.5rem;">
-                        <i class="fas fa-pause"></i>
-                        Pause
-                    </button>
-                </td>
-            </tr>
-            <tr>
-                <td>#002</td>
-                <td>Counter 2</td>
-                <td>Account Services</td>
-                <td>Jane Smith</td>
-                <td><span class="status-badge status-active">Active</span></td>
-                <td>B012</td>
-                <td>2 customers</td>
-                <td>
-                    <button class="btn btn-warning" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
-                        <i class="fas fa-edit"></i>
-                        Edit
-                    </button>
-                    <button class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; margin-left: 0.5rem;">
-                        <i class="fas fa-pause"></i>
-                        Pause
-                    </button>
-                </td>
-            </tr>
-            <tr>
-                <td>#003</td>
-                <td>Counter 3</td>
-                <td>Loan Services</td>
-                <td>Mike Johnson</td>
-                <td><span class="status-badge status-break">On Break</span></td>
-                <td>C008</td>
-                <td>5 customers</td>
-                <td>
-                    <button class="btn btn-warning" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
-                        <i class="fas fa-edit"></i>
-                        Edit
-                    </button>
-                    <button class="btn btn-success" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; margin-left: 0.5rem;">
-                        <i class="fas fa-play"></i>
-                        Resume
-                    </button>
-                </td>
-            </tr>
-            <tr>
-                <td>#004</td>
-                <td>Counter 4</td>
-                <td>Card Services</td>
-                <td>Sarah Wilson</td>
-                <td><span class="status-badge status-active">Active</span></td>
-                <td>D015</td>
-                <td>1 customer</td>
-                <td>
-                    <button class="btn btn-warning" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
-                        <i class="fas fa-edit"></i>
-                        Edit
-                    </button>
-                    <button class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; margin-left: 0.5rem;">
-                        <i class="fas fa-pause"></i>
-                        Pause
-                    </button>
-                </td>
-            </tr>
-            <tr>
-                <td>#005</td>
-                <td>Counter 5</td>
-                <td>Deposits</td>
-                <td>David Brown</td>
-                <td><span class="status-badge status-active">Active</span></td>
-                <td>E020</td>
-                <td>4 customers</td>
-                <td>
-                    <button class="btn btn-warning" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
-                        <i class="fas fa-edit"></i>
-                        Edit
-                    </button>
-                    <button class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; margin-left: 0.5rem;">
-                        <i class="fas fa-pause"></i>
-                        Pause
-                    </button>
-                </td>
-            </tr>
-            <tr>
-                <td>#006</td>
-                <td>Counter 6</td>
-                <td>Withdrawals</td>
-                <td>Lisa Anderson</td>
-                <td><span class="status-badge status-active">Active</span></td>
-                <td>F005</td>
-                <td>2 customers</td>
-                <td>
-                    <button class="btn btn-warning" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
-                        <i class="fas fa-edit"></i>
-                        Edit
-                    </button>
-                    <button class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; margin-left: 0.5rem;">
-                        <i class="fas fa-pause"></i>
-                        Pause
-                    </button>
-                </td>
-            </tr>
+        <tbody id="countersTableBody">
+            <!-- Counters will be loaded here via JavaScript -->
         </tbody>
     </table>
 </div>
 
-<!-- Counter Configuration -->
-<div class="content-grid">
-    <div class="content-card">
-        <div class="card-header">
-            <h3 class="card-title">
-                <i class="fas fa-cogs"></i>
-                Counter Configuration
-            </h3>
+<!-- Counter Modal -->
+<div id="counterModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">Add New Counter</h3>
+            <button type="button" class="modal-close" onclick="closeModal()">&times;</button>
         </div>
-        <div class="config-form">
-            <div style="margin-bottom: 1rem;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--primary-color);">Select Counter:</label>
-                <select style="width: 100%; padding: 0.8rem; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit;">
-                    <option>Counter 1 - General Inquiry</option>
-                    <option>Counter 2 - Account Services</option>
-                    <option>Counter 3 - Loan Services</option>
-                    <option>Counter 4 - Card Services</option>
-                    <option>Counter 5 - Deposits</option>
-                    <option>Counter 6 - Withdrawals</option>
-                </select>
+        <form id="counterForm">
+            <div class="modal-body">
+                <div style="margin-bottom: 1rem;">
+                    <label for="counter_name">Counter Name *</label>
+                    <input type="text" id="counter_name" name="counter_name" required placeholder="e.g., Service Counter 1, Information Desk">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label for="counter_description">Counter Description</label>
+                    <textarea id="counter_description" name="counter_description" rows="3" placeholder="Describe the services provided by this counter..." style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit; resize: vertical;"></textarea>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label for="current_number">Current Number *</label>
+                    <input type="text" id="current_number" name="current_number" required placeholder="e.g., A000, B000" readonly style="background-color: #f8f9fa;">
+                    <small style="color: #6c757d; font-size: 0.875rem;">Auto-generated alphabetically (A000, B000, etc.)</small>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label for="status">Status *</label>
+                        <select id="status" name="status" required>
+                            <option value="Active">Active</option>
+                            <option value="Break">On Break</option>
+                            <option value="Offline">Offline</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="user_id">Assign Operator</label>
+                        <select id="user_id" name="user_id">
+                            <!-- Options loaded via JavaScript -->
+                        </select>
+                    </div>
+                </div>
             </div>
-            <div style="margin-bottom: 1rem;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--primary-color);">Service Type:</label>
-                <input type="text" placeholder="Enter service type" style="width: 100%; padding: 0.8rem; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit;">
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Counter</button>
             </div>
-            <div style="margin-bottom: 1rem;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--primary-color);">Assign Operator:</label>
-                <select style="width: 100%; padding: 0.8rem; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit;">
-                    <option>Select Operator</option>
-                    <option>John Doe</option>
-                    <option>Jane Smith</option>
-                    <option>Mike Johnson</option>
-                    <option>Sarah Wilson</option>
-                    <option>David Brown</option>
-                    <option>Lisa Anderson</option>
-                </select>
-            </div>
-            <button class="btn btn-primary" style="width: 100%;">
-                <i class="fas fa-save"></i>
-                Save Configuration
-            </button>
-        </div>
+        </form>
     </div>
+</div>
 
-    <div class="content-card">
-        <div class="card-header">
-            <h3 class="card-title">
-                <i class="fas fa-chart-pie"></i>
-                Counter Performance
+<!-- Awaiting Queue Table -->
+<div class="content-card" style="margin-bottom: 2rem; margin-top: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+            <h3 style="margin: 0; color: var(--primary-color);">
+                <i class="fas fa-clock"></i>
+                Awaiting Queue
             </h3>
-        </div>
-        <div class="performance-metrics">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
-                <div style="text-align: center; padding: 1rem; background: var(--light-gray); border-radius: 8px;">
-                    <div style="font-size: 1.5rem; font-weight: 700; color: var(--success-color);">24</div>
-                    <div style="font-size: 0.85rem; color: var(--medium-gray);">Customers Served</div>
-                </div>
-                <div style="text-align: center; padding: 1rem; background: var(--light-gray); border-radius: 8px;">
-                    <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent-color);">3.5 min</div>
-                    <div style="font-size: 0.85rem; color: var(--medium-gray);">Avg Service Time</div>
-                </div>
-            </div>
-            <div style="background: var(--light-gray); padding: 1rem; border-radius: 8px; text-align: center;">
-                <i class="fas fa-chart-bar" style="font-size: 2rem; color: var(--medium-gray); margin-bottom: 0.5rem;"></i>
-                <div style="color: var(--medium-gray); font-size: 0.9rem;">Performance analytics will be displayed here</div>
-            </div>
+            <input type="text" id="awaitingSearchInput" placeholder="Search by counter name..." style="padding: 0.6rem 1rem; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit; min-width: 200px;">
+            <select id="awaitingStatusFilter" style="padding: 0.6rem 1rem; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit;">
+                <option value="">All Counter Status</option>
+                <option value="Active">Active</option>
+                <option value="Break">On Break</option>
+                <option value="Offline">Offline</option>
+            </select>
         </div>
     </div>
 </div>
+
+<div class="table-container">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Awaiting ID</th>
+                <th>Awaiting Number</th>
+                <th>Counter Name</th>
+                <th>Counter Current Number</th>
+                <th>Counter Status</th>
+            </tr>
+        </thead>
+        <tbody id="awaitingTableBody">
+            <!-- Awaiting entries will be loaded here via JavaScript -->
+        </tbody>
+    </table>
+</div>
+
+<script src="counters/scripts.js"></script>
 
 <?php include 'components/footer.php'; ?>

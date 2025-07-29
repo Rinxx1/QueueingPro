@@ -89,6 +89,37 @@
     margin-top: 1rem;
 }
 
+/* No Counters State */
+.no-counters {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--medium-gray);
+    background: white;
+    border-radius: var(--border-radius);
+    border: 2px dashed var(--border-color);
+}
+
+.no-counters-icon {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    color: var(--warning-color);
+}
+
+.no-counters h3 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--primary-color);
+}
+
+.no-counters p {
+    font-size: 1.1rem;
+    color: var(--medium-gray);
+    max-width: 500px;
+    margin: 0 auto;
+}
+
 .transaction-card {
     border: 2px solid #dee2e6;
     border-radius: 15px;
@@ -667,6 +698,41 @@
     margin-bottom: 0.5rem;
 }
 
+.queue-info-display {
+    display: flex;
+    gap: 1rem;
+    justify-content: space-around;
+    margin: 1rem 0;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.queue-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    flex: 1;
+}
+
+.queue-stat .stat-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    opacity: 0.8;
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.queue-stat .stat-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #4A90E2;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
 .number-label {
     display: block;
     font-size: 0.9rem;
@@ -790,6 +856,24 @@
     justify-content: center;
     align-items: center;
     width: 100%;
+}
+
+/* Force hide confirmation actions when in final step */
+#confirmationActions.hidden {
+    display: none !important;
+}
+
+#finalActions.hidden {
+    display: none !important;
+}
+
+/* Ensure only one set of actions shows at a time */
+.modal-actions {
+    position: relative;
+}
+
+.modal-actions > div:not([style*="display: flex"]):not([style*="display: block"]) {
+    display: none;
 }
 
 /* Responsive Design - Landscape First for Kiosk */
@@ -1184,4 +1268,35 @@
     body {
         background: white;
     }
+}
+
+/* No Counters Empty State */
+.no-counters {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--medium-gray);
+    background: white;
+    border-radius: var(--border-radius);
+    border: 2px dashed var(--border-color);
+}
+
+.no-counters-icon {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    color: var(--warning-color);
+}
+
+.no-counters h3 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--primary-color);
+}
+
+.no-counters p {
+    font-size: 1.1rem;
+    color: var(--medium-gray);
+    max-width: 500px;
+    margin: 0 auto;
 }
