@@ -154,6 +154,12 @@ class QueueController {
                 this.previousNumber = result.previous || this.currentNumber;
                 this.currentNumber = result.number;
                 
+                // Update global config to sync with repeat function
+                if (window.controllerConfig) {
+                    window.controllerConfig.currentNumber = this.currentNumber;
+                    window.controllerConfig.previousNumber = this.previousNumber;
+                }
+                
                 this.updateDisplay();
                 await this.loadAwaitingQueue();
                 
@@ -174,8 +180,8 @@ class QueueController {
             return;
         }
 
-        this.showMessage(`${this.operatorName} repeated number ${this.currentNumber}`, 'info');
-        this.animateNumberChange('currentNumber');
+        // Call the global repeat function with updated current number
+        handleRepeatNumber();
     }
 
     async toggleBreak() {
@@ -225,6 +231,12 @@ class QueueController {
         if (updated.success) {
             this.previousNumber = updated.previous || this.currentNumber;
             this.currentNumber = newNumber;
+            
+            // Update global config to sync with repeat function
+            if (window.controllerConfig) {
+                window.controllerConfig.currentNumber = this.currentNumber;
+                window.controllerConfig.previousNumber = this.previousNumber;
+            }
             
             this.updateDisplay();
             this.showMessage(`${this.operatorName} set current number to ${newNumber}`, 'success');
@@ -447,3 +459,108 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Counter not assigned - controller interface disabled');
     }
 });
+
+// Event Listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Repeat Number Button
+    const repeatBtn = document.getElementById('repeatNumberBtn');
+    if (repeatBtn) {
+        repeatBtn.addEventListener('click', handleRepeatNumber);
+    }
+});
+
+// Handle repeat number functionality
+async function handleRepeatNumber() {
+    const repeatBtn = document.getElementById('repeatNumberBtn');
+    
+    if (!window.controllerConfig || !window.controllerConfig.counterId) {
+        showMessage('Counter not configured', 'error');
+        return;
+    }
+    
+    // Get the most current number from the controller instance or config
+    let currentNumber = window.controllerConfig.currentNumber;
+    
+    // If controller instance exists, use its current number (most up to date)
+    if (window.queueController && window.queueController.currentNumber) {
+        currentNumber = window.queueController.currentNumber;
+        // Sync the config as well
+        window.controllerConfig.currentNumber = currentNumber;
+    }
+    
+    const counterName = window.controllerConfig.counterName;
+    
+    if (!currentNumber || currentNumber === '-' || currentNumber === 'None') {
+        showMessage('No current number to repeat', 'error');
+        return;
+    }
+    
+    // Show loading state
+    repeatBtn.disabled = true;
+    repeatBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Repeating...</span>';
+    
+    try {
+        const response = await fetch('actions.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                action: 'repeat_number',
+                counter_id: window.controllerConfig.counterId,
+                current_number: currentNumber,
+                counter_name: counterName
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showMessage('Number repeated successfully - speaking slowly for clarity', 'success');
+            
+            // Optional: Add visual feedback to current number
+            const currentNumberElement = document.getElementById('currentNumber');
+            if (currentNumberElement) {
+                currentNumberElement.style.animation = 'pulse 1s ease-in-out';
+                setTimeout(() => {
+                    currentNumberElement.style.animation = '';
+                }, 1000);
+            }
+        } else {
+            showMessage('Error repeating number: ' + result.message, 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showMessage('Error connecting to server', 'error');
+    } finally {
+        // Reset button state
+        repeatBtn.disabled = false;
+        repeatBtn.innerHTML = '<i class="fas fa-redo"></i> <span>Repeat Number</span> <small>Call current again</small>';
+    }
+}
+
+// Add showMessage function if it doesn't exist
+function showMessage(text, type) {
+    // Try to use the controller's showMessage method first
+    if (window.queueController && typeof window.queueController.showMessage === 'function') {
+        window.queueController.showMessage(text, type);
+        return;
+    }
+    
+    // Fallback to direct DOM manipulation
+    const container = document.getElementById('messageContainer');
+    const message = document.getElementById('message');
+    
+    if (!container || !message) {
+        console.log(`${type.toUpperCase()}: ${text}`);
+        return;
+    }
+    
+    message.textContent = text;
+    message.className = `message ${type}`;
+    container.style.display = 'block';
+    
+    setTimeout(() => {
+        container.style.display = 'none';
+    }, 3000);
+}

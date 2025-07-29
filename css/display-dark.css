@@ -1,0 +1,138 @@
+/* Dark Mode Styles for Queue Display */
+
+body.dark-mode {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    color: #ffffff;
+}
+
+.dark-mode .display-container {
+    background: #1a1a1a;
+}
+
+.dark-mode .counter-card {
+    background: linear-gradient(145deg, #2d2d2d, #1f1f1f);
+    border: 1px solid #404040;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    color: #ffffff;
+}
+
+.dark-mode .counter-card.active {
+    background: linear-gradient(145deg, #2a4d3a, #1e3a2e);
+    border: 1px solid #4CAF50;
+    box-shadow: 0 8px 32px rgba(76, 175, 80, 0.2);
+}
+
+.dark-mode .counter-card.offline {
+    background: linear-gradient(145deg, #3d2d2d, #2f1f1f);
+    border: 1px solid #666666;
+}
+
+.dark-mode .counter-header h3 {
+    color: #ffffff;
+}
+
+.dark-mode .counter-number {
+    background: linear-gradient(135deg, #404040, #2d2d2d);
+    color: #ffffff;
+    border: 1px solid #555555;
+}
+
+.dark-mode .counter-status.online {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    color: #ffffff;
+}
+
+.dark-mode .counter-status.offline {
+    background: linear-gradient(135deg, #666666, #555555);
+    color: #cccccc;
+}
+
+.dark-mode .queue-number {
+    color: #ffffff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.dark-mode .counter-card.active .queue-number {
+    color: #4CAF50;
+    text-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+}
+
+.dark-mode .counter-stats .stat {
+    color: #cccccc;
+}
+
+.dark-mode .counter-stats .stat i {
+    color: #ffffff;
+}
+
+.dark-mode .video-progress {
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid #404040;
+}
+
+.dark-mode .progress-bar {
+    background: #404040;
+}
+
+.dark-mode .progress-fill {
+    background: linear-gradient(90deg, #4CAF50, #45a049);
+}
+
+.dark-mode .video-time-display {
+    color: #ffffff;
+}
+
+.dark-mode .video-duration {
+    color: #cccccc;
+}
+
+.dark-mode .datetime-section {
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid #404040;
+    color: #ffffff;
+}
+
+.dark-mode .current-time {
+    color: #4CAF50;
+}
+
+.dark-mode .current-date {
+    color: #cccccc;
+}
+
+.dark-mode .video-loading {
+    background: rgba(0, 0, 0, 0.9);
+    color: #ffffff;
+}
+
+.dark-mode .video-placeholder {
+    background: rgba(0, 0, 0, 0.9);
+    color: #ffffff;
+}
+
+.dark-mode .no-counters-message {
+    background: rgba(45, 45, 45, 0.9);
+    color: #ffffff;
+    border: 1px solid #404040;
+}
+
+.dark-mode .label {
+    color: #cccccc;
+}
+
+/* Dark mode transitions */
+.dark-mode * {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Counter animations in dark mode */
+.dark-mode .counter-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(76, 175, 80, 0.15);
+}
+
+.dark-mode .counter-card.active:hover {
+    box-shadow: 0 12px 40px rgba(76, 175, 80, 0.3);
+}

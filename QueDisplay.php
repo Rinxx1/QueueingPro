@@ -26,20 +26,34 @@ foreach ($counters as $counter) {
     $counterId = $counter['Counter_ID'];
     
     try {
-        // Get served today count and average time for today's date only
+        // Get served today count based on Date_Completed = today's date
         $stmt = $pdo->prepare("
-            SELECT 
-                COUNT(*) as served_today,
-                AVG(TIME_TO_SEC(Duration)) as avg_seconds
+            SELECT COUNT(*) as served_today
             FROM complete 
             WHERE Counter_ID = ? 
             AND Date_Completed = CURDATE()
         ");
         $stmt->execute([$counterId]);
-        $stats = $stmt->fetch(PDO::FETCH_ASSOC);
+        $servedResult = $stmt->fetch(PDO::FETCH_ASSOC);
+        $servedToday = $servedResult['served_today'] ?? 0;
         
-        $servedToday = $stats['served_today'] ?? 0;
-        $avgMinutes = $stats['avg_seconds'] ? round($stats['avg_seconds'] / 60, 1) : 0;
+        // Get average duration for today based on Date_Completed = today's date
+        $stmt = $pdo->prepare("
+            SELECT AVG(TIME_TO_SEC(Duration)) as avg_duration_seconds
+            FROM complete 
+            WHERE Counter_ID = ? 
+            AND Date_Completed = CURDATE()
+            AND Duration IS NOT NULL
+            AND Duration != ''
+        ");
+        $stmt->execute([$counterId]);
+        $durationResult = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        $avgMinutes = 0;
+        if ($durationResult['avg_duration_seconds']) {
+            $avgSeconds = (float)$durationResult['avg_duration_seconds'];
+            $avgMinutes = round($avgSeconds / 60, 1); // Convert to minutes with 1 decimal
+        }
         
         $counterStats[$counterId] = [
             'served_today' => $servedToday,
@@ -64,12 +78,13 @@ try {
     $activeVideo = null;
 }
 
-// Get global mute status, volume, and voice announcements setting
+// Get global mute status, volume, voice announcements, and dark mode setting
 $globalMuted = false;
 $globalVolume = 50; // Default volume 50%
 $voiceAnnouncements = true; // Default to enabled
+$darkModeEnabled = false; // Default to disabled
 try {
-    $stmt = $pdo->prepare("SELECT setting_key, setting_value, Volume FROM settings WHERE setting_key IN ('global_video_muted', 'global_video_volume', 'voice_announcements_enabled')");
+    $stmt = $pdo->prepare("SELECT setting_key, setting_value, Volume FROM settings WHERE setting_key IN ('global_video_muted', 'global_video_volume', 'voice_announcements_enabled', 'dark_mode_enabled')");
     $stmt->execute();
     $settings = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
@@ -80,14 +95,24 @@ try {
             $globalVolume = (int)$setting['Volume'];
         } elseif ($setting['setting_key'] === 'voice_announcements_enabled') {
             $voiceAnnouncements = (bool)$setting['setting_value'];
+        } elseif ($setting['setting_key'] === 'dark_mode_enabled') {
+            $darkModeEnabled = (bool)$setting['setting_value'];
         }
     }
     
-    // Insert default voice announcements setting if not exists
+    // Insert default settings if not exists
     if (!array_filter($settings, fn($s) => $s['setting_key'] === 'voice_announcements_enabled')) {
         $stmt = $pdo->prepare("
             INSERT INTO settings (setting_key, setting_value) 
             VALUES ('voice_announcements_enabled', '1')
+        ");
+        $stmt->execute();
+    }
+    
+    if (!array_filter($settings, fn($s) => $s['setting_key'] === 'dark_mode_enabled')) {
+        $stmt = $pdo->prepare("
+            INSERT INTO settings (setting_key, setting_value) 
+            VALUES ('dark_mode_enabled', '0')
         ");
         $stmt->execute();
     }
@@ -96,6 +121,7 @@ try {
     $globalMuted = false;
     $globalVolume = 50;
     $voiceAnnouncements = true;
+    $darkModeEnabled = false;
 }
 ?>
 <!DOCTYPE html>
@@ -106,8 +132,11 @@ try {
     <title>Queue Display - QueueingPro</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/display.css">
+    <?php if ($darkModeEnabled): ?>
+    <link rel="stylesheet" href="css/display-dark.css">
+    <?php endif; ?>
 </head>
-<body>
+<body class="<?php echo $darkModeEnabled ? 'dark-mode' : ''; ?>">
     <!-- Main Display Container -->
     <main class="display-container" data-counter-count="<?php echo count($counters); ?>">
         <?php if (count($counters) > 0): ?>
@@ -199,6 +228,7 @@ try {
                                data-global-muted="<?php echo $globalMuted ? '1' : '0'; ?>" 
                                data-global-volume="<?php echo $globalVolume; ?>"
                                data-voice-announcements="<?php echo $voiceAnnouncements ? '1' : '0'; ?>"
+                               data-dark-mode="<?php echo $darkModeEnabled ? '1' : '0'; ?>"
                                data-debug-active-video="<?php echo $activeVideo ? 'true' : 'false'; ?>"
                                data-debug-video-title="<?php echo $activeVideo ? htmlspecialchars($activeVideo['Video_Title']) : 'none'; ?>">
                             <?php if ($activeVideo && !empty($activeVideo['Video_Location'])): ?>
@@ -267,10 +297,10 @@ try {
         <section class="datetime-section">
             <div class="current-time" id="currentTime"></div>
             <div class="current-date" id="currentDate"></div>
-            <div class="voice-indicator" id="voiceIndicator" style="display: none;">
+            <!-- <div class="voice-indicator" id="voiceIndicator" style="display: none;">
                 <i class="fas fa-volume-up"></i>
                 <span>Voice Active</span>
-            </div>
+            </div> -->
         </section>
     </main>
 

@@ -250,7 +250,7 @@ try {
             </section>
 
             <!-- Manual Set Current Number -->
-            <section class="manual-control">
+            <!-- <section class="manual-control">
                 <div class="control-card">
                     <div class="card-header">
                         <i class="fas fa-edit"></i>
@@ -272,7 +272,7 @@ try {
                         </div>
                     </div>
                 </div>
-            </section>
+            </section> -->
 
             <!-- Action Buttons -->
             <section class="action-buttons">

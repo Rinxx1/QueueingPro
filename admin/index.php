@@ -77,10 +77,10 @@ $hourlyData = getHourlyPerformance();
                 <i class="fas fa-tv"></i>
                 View Display
             </a>
-            <a href="../controller/" class="btn btn-primary" target="_blank">
+            <!-- <a href="../controller/" class="btn btn-primary" target="_blank">
                 <i class="fas fa-gamepad"></i>
                 Controller Panel
-            </a>
+            </a> -->
             <button id="toggleVoiceAnnouncements" class="btn btn-info">
                 <i class="fas fa-volume-up"></i>
                 <span id="voiceStatus">Voice: ON</span>
@@ -88,6 +88,10 @@ $hourlyData = getHourlyPerformance();
             <button id="testVoiceAnnouncement" class="btn btn-warning">
                 <i class="fas fa-play"></i>
                 Test Voice
+            </button>
+            <button id="toggleDarkMode" class="btn btn-dark">
+                <i class="fas fa-moon"></i>
+                <span id="darkModeStatus">Dark Mode: OFF</span>
             </button>
         </div>
     </div>
@@ -357,6 +361,69 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
             });
+        }
+    }
+    
+    // Dark mode toggle functionality
+    const darkModeToggleButton = document.getElementById('toggleDarkMode');
+    const darkModeStatus = document.getElementById('darkModeStatus');
+    
+    if (darkModeToggleButton && darkModeStatus) {
+        // Get current dark mode status
+        fetch('../display/display_data.php')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.hasOwnProperty('dark_mode_enabled')) {
+                    updateDarkModeButton(data.dark_mode_enabled);
+                }
+            })
+            .catch(error => console.error('Error fetching dark mode status:', error));
+        
+        darkModeToggleButton.addEventListener('click', function() {
+            const currentStatus = darkModeStatus.textContent.includes('ON');
+            const newStatus = !currentStatus;
+            
+            // Update the setting via AJAX
+            fetch('dark_mode_ajax.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'action=toggle&enabled=' + (newStatus ? '1' : '0')
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateDarkModeButton(newStatus);
+                    // Show success message
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            title: 'Success!',
+                            text: `Dark mode ${newStatus ? 'enabled' : 'disabled'} for Queue Display`,
+                            icon: 'success',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    }
+                } else {
+                    console.error('Error updating dark mode:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error updating dark mode:', error);
+            });
+        });
+        
+        function updateDarkModeButton(enabled) {
+            if (enabled) {
+                darkModeStatus.textContent = 'Dark Mode: ON';
+                darkModeToggleButton.className = 'btn btn-secondary';
+                darkModeToggleButton.querySelector('i').className = 'fas fa-sun';
+            } else {
+                darkModeStatus.textContent = 'Dark Mode: OFF';
+                darkModeToggleButton.className = 'btn btn-dark';
+                darkModeToggleButton.querySelector('i').className = 'fas fa-moon';
+            }
         }
     }
 });

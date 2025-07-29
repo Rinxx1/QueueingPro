@@ -14,6 +14,7 @@ class QueueDisplay {
         this.announcementQueue = []; // Queue for voice announcements
         this.isSpeaking = false; // Track if currently speaking
         this.previousNumbers = {}; // Track previous numbers for each counter
+        this.processedAnnouncements = new Set(); // Track processed announcements
         
         this.init();
     }
@@ -151,7 +152,7 @@ class QueueDisplay {
     
     async fetchQueueData() {
         try {
-            const response = await fetch('display_data.php');
+            const response = await fetch('display/display_data.php');
             const result = await response.json();
             
             if (result.success) {
@@ -161,7 +162,6 @@ class QueueDisplay {
                 if (result.video) {
                     this.handleVideoUpdate(result.video);
                 } else {
-                    // No active video
                     this.handleVideoUpdate(null);
                 }
                 
@@ -170,15 +170,25 @@ class QueueDisplay {
                     this.handleGlobalMuteUpdate(result.global_muted);
                 }
                 
-                        // Handle global volume
-        if (result.hasOwnProperty('global_volume')) {
-            this.handleGlobalVolumeUpdate(result.global_volume);
-        }
-        
-        // Handle voice announcements setting
-        if (result.hasOwnProperty('voice_announcements')) {
-            this.handleVoiceAnnouncementsUpdate(result.voice_announcements);
-        }
+                // Handle global volume
+                if (result.hasOwnProperty('global_volume')) {
+                    this.handleGlobalVolumeUpdate(result.global_volume);
+                }
+                
+                // Handle voice announcements setting
+                if (result.hasOwnProperty('voice_announcements')) {
+                    this.handleVoiceAnnouncementsUpdate(result.voice_announcements);
+                }
+                
+                // Handle dark mode setting
+                if (result.hasOwnProperty('dark_mode_enabled')) {
+                    this.handleDarkModeUpdate(result.dark_mode_enabled);
+                }
+                
+                // Handle new announcements
+                if (result.announcements && Array.isArray(result.announcements)) {
+                    this.handleAnnouncements(result.announcements);
+                }
             } else {
                 console.error('Error fetching queue data:', result.message);
                 this.handleDataError();
@@ -189,25 +199,152 @@ class QueueDisplay {
         }
     }
     
-    handleDataError() {
-        // Handle data loading errors gracefully
-        console.warn('Using fallback data due to connection issues');
-        
-        // Create fallback data for 6 counters
-        const fallbackCounters = [];
-        for (let i = 1; i <= 6; i++) {
-            fallbackCounters.push({
-                id: i,
-                name: `Counter ${i}`,
-                description: '',
-                current_number: '--',
-                status: 'Offline',
-                served_today: 0,
-                avg_duration: 0
-            });
+    // Handle new announcements from server
+    handleAnnouncements(announcements) {
+        if (!this.voiceAnnouncementsEnabled) {
+            return;
         }
         
-        this.updateDisplay(fallbackCounters);
+        announcements.forEach(announcement => {
+            const announcementId = announcement.Announcement_ID;
+            
+            // Skip if we've already processed this announcement
+            if (this.processedAnnouncements.has(announcementId)) {
+                return;
+            }
+            
+            // Mark as processed
+            this.processedAnnouncements.add(announcementId);
+            
+            console.log('Processing announcement:', announcement);
+            
+            // Handle different announcement types
+            switch (announcement.Announcement_Type) {
+                case 'repeat':
+                    this.announceRepeatNumber(
+                        announcement.Counter_ID,
+                        announcement.Announcement_Number,
+                        announcement.Counter_Name
+                    );
+                    break;
+                case 'next':
+                    // Handle next number announcements if needed
+                    this.announceNewNumber(
+                        announcement.Counter_ID,
+                        announcement.Counter_Name,
+                        announcement.Announcement_Number
+                    );
+                    break;
+                default:
+                    // Handle custom announcement text
+                    if (announcement.Announcement_Text) {
+                        this.announceCustomText(announcement.Announcement_Text);
+                    }
+                    break;
+            }
+        });
+        
+        // Clean up old processed announcements (keep only last 50)
+        if (this.processedAnnouncements.size > 50) {
+            const oldestIds = Array.from(this.processedAnnouncements).slice(0, 25);
+            oldestIds.forEach(id => this.processedAnnouncements.delete(id));
+        }
+    }
+    
+    // Announce repeat number with counter name
+    announceRepeatNumber(counterId, number, counterName) {
+        console.log('announceRepeatNumber called:', { counterId, number, counterName });
+        
+        if (!this.voiceAnnouncementsEnabled || !window.speechSynthesis) {
+            return;
+        }
+        
+        // Cancel any ongoing speech for immediate announcement
+        if (window.speechSynthesis.speaking) {
+            window.speechSynthesis.cancel();
+        }
+        
+        // Create the announcement text
+        const announcement = `Number ${number} please proceed to ${counterName}`;
+        
+        // Create speech utterance
+        const utterance = new SpeechSynthesisUtterance(announcement);
+        
+        // Configure speech settings - slower and clearer for repeat announcements
+        utterance.rate = 0.7; // Much slower for better clarity and understanding
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+        utterance.lang = 'en-US';
+        
+        // Use clear voice
+        const voices = window.speechSynthesis.getVoices();
+        if (voices.length > 0) {
+            const preferredVoice = voices.find(voice => 
+                voice.lang.includes('en') && 
+                !voice.name.includes('Google')
+            );
+            
+            if (preferredVoice) {
+                utterance.voice = preferredVoice;
+            }
+        }
+        
+        // Add event handlers
+        utterance.onstart = () => {
+            console.log('Repeat announcement started:', announcement);
+            this.showAnnouncementIndicator();
+        };
+        
+        utterance.onend = () => {
+            console.log('Repeat announcement completed');
+        };
+        
+        utterance.onerror = (event) => {
+            console.error('Repeat announcement error:', event.error);
+        };
+        
+        // Speak immediately
+        window.speechSynthesis.speak(utterance);
+        
+        // Add visual highlight to the counter
+        this.highlightCounter(counterId);
+    }
+    
+    // Announce custom text
+    announceCustomText(text) {
+        if (!this.voiceAnnouncementsEnabled || !window.speechSynthesis) {
+            return;
+        }
+        
+        // Cancel any ongoing speech for immediate announcement
+        if (window.speechSynthesis.speaking) {
+            window.speechSynthesis.cancel();
+        }
+        
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.6;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+        utterance.lang = 'en-US';
+        
+        const voices = window.speechSynthesis.getVoices();
+        if (voices.length > 0) {
+            const preferredVoice = voices.find(voice => 
+                voice.lang.includes('en') && 
+                !voice.name.includes('Google')
+            );
+            
+            if (preferredVoice) {
+                utterance.voice = preferredVoice;
+            }
+        }
+        
+        utterance.onstart = () => {
+            console.log('Custom announcement started:', text);
+            this.showAnnouncementIndicator();
+        };
+        
+        window.speechSynthesis.speak(utterance);
     }
     
     updateDisplay(counters) {
@@ -287,8 +424,14 @@ class QueueDisplay {
         }
         
         // Check for number changes and handle announcements
-        if (newNumber !== previousNumber && newNumber !== '--' && isActive) {
-            console.log('Number change detected:', { 
+        // Only announce if: 1) Number changed, 2) New number is not '--', 3) Counter is active, 4) Voice is enabled
+        if (newNumber !== previousNumber && 
+            newNumber !== '--' && 
+            previousNumber !== '--' && // Don't announce on initial load
+            isActive && 
+            this.voiceAnnouncementsEnabled) {
+            
+            console.log('Number change detected for announcement:', { 
                 counterId: counter.id, 
                 counterName: counter.name,
                 previousNumber, 
@@ -297,9 +440,10 @@ class QueueDisplay {
                 voiceEnabled: this.voiceAnnouncementsEnabled 
             });
             
-            // Announce new number immediately
-            console.log('Triggering announcement for counter:', counter.id);
-            this.announceNewNumber(counter.id, counter.name, newNumber);
+            // Add small delay to ensure DOM is updated
+            setTimeout(() => {
+                this.announceNewNumber(counter.id, counter.name, newNumber);
+            }, 100);
         }
         
         // Update served today
@@ -335,55 +479,65 @@ class QueueDisplay {
             return;
         }
         
-        // Ensure speech synthesis is not paused
-        if (window.speechSynthesis.paused) {
-            console.log('Speech synthesis was paused, resuming...');
-            window.speechSynthesis.resume();
+        // Cancel any ongoing speech to prioritize new announcements
+        if (window.speechSynthesis.speaking) {
+            console.log('Canceling previous speech for new announcement');
+            window.speechSynthesis.cancel();
         }
         
-        // Create the announcement text - simple format
+        // Clear announcement queue for immediate announcement
+        this.announcementQueue = [];
+        this.isSpeaking = false;
+        
+        // Create the announcement text - simple and clear
         const announcement = `Number ${number}`;
         
         // Create speech utterance
         const utterance = new SpeechSynthesisUtterance(announcement);
         
-        // Configure speech settings - much slower for clarity
-        utterance.rate = 0.6; // Much slower for better clarity
+        // Configure speech settings for clarity
+        utterance.rate = 0.7; // Slower for better clarity
         utterance.pitch = 1.0;
         utterance.volume = 1.0;
+        utterance.lang = 'en-US';
         
         // Try to use a clear voice
         const voices = window.speechSynthesis.getVoices();
-        const preferredVoice = voices.find(voice => 
-            voice.lang.includes('en') && 
-            (voice.name.includes('Google') || voice.name.includes('Microsoft') || voice.name.includes('Samantha'))
-        );
-        
-        if (preferredVoice) {
-            utterance.voice = preferredVoice;
+        if (voices.length > 0) {
+            const preferredVoice = voices.find(voice => 
+                voice.lang.includes('en') && 
+                !voice.name.includes('Google') // Avoid robotic voices
+            );
+            
+            if (preferredVoice) {
+                utterance.voice = preferredVoice;
+                console.log('Using voice:', preferredVoice.name);
+            } else {
+                utterance.voice = voices[0];
+                console.log('Using default voice:', voices[0].name);
+            }
         }
         
-        // Add to announcement queue instead of canceling
-        this.queueAnnouncement(utterance);
-        
-        // Add error handling for speech synthesis
+        // Add error handling
         utterance.onerror = (event) => {
             console.error('Speech synthesis error:', event.error);
-            this.removeFromQueue(utterance);
+        };
+        
+        utterance.onstart = () => {
+            console.log('Speech started:', announcement);
+            this.showAnnouncementIndicator();
         };
         
         utterance.onend = () => {
             console.log('Speech announcement completed');
-            this.removeFromQueue(utterance);
         };
+        
+        // Speak immediately
+        console.log('Speaking announcement:', announcement);
+        window.speechSynthesis.speak(utterance);
         
         // Add visual highlight to the counter
         this.highlightCounter(counterId);
-        
-        // Show brief visual indicator that announcement is happening
-        this.showAnnouncementIndicator();
-        
-        console.log('Announcing new number:', announcement);
     }
     
     // Handle video updates from server
@@ -618,7 +772,7 @@ class QueueDisplay {
     initVideoPlayer() {
         const video = document.getElementById('displayVideo');
         const progressFill = document.getElementById('progressFill');
-        const progressBar = document.querySelector('.progress-bar');
+        const progressBar = document.querySelector('.video-progress');
         const videoPlayTimeSpan = document.getElementById('videoPlayTime');
         const videoDurationSpan = document.getElementById('videoDuration');
         const videoPlaceholder = document.getElementById('videoPlaceholder');
@@ -1280,6 +1434,36 @@ class QueueDisplay {
             } else {
                 voiceIndicator.style.display = 'none';
             }
+        }
+    }
+
+    // Handle dark mode setting updates from admin
+    handleDarkModeUpdate(darkModeEnabled) {
+        const body = document.body;
+        const currentlyDark = body.classList.contains('dark-mode');
+        
+        if (darkModeEnabled && !currentlyDark) {
+            body.classList.add('dark-mode');
+            
+            // Load dark mode CSS if not already loaded
+            if (!document.querySelector('link[href*="display-dark.css"]')) {
+                const darkCSS = document.createElement('link');
+                darkCSS.rel = 'stylesheet';
+                darkCSS.href = 'css/display-dark.css';
+                document.head.appendChild(darkCSS);
+            }
+            
+            console.log('Dark mode enabled');
+        } else if (!darkModeEnabled && currentlyDark) {
+            body.classList.remove('dark-mode');
+            
+            // Remove dark mode CSS
+            const darkCSS = document.querySelector('link[href*="display-dark.css"]');
+            if (darkCSS) {
+                darkCSS.remove();
+            }
+            
+            console.log('Dark mode disabled');
         }
     }
 
